@@ -9,7 +9,7 @@
 
 const char *TAG_OLED = "OLED";
 
-uint8_t invert = OLED_CMD_DISPLAY_NORMAL;//0xA6 //OLED_CMD_DISPLAY_INVERTED - 0xA7
+uint8_t invert = OLED_CMD_DISPLAY_INVERTED;//0xA7 // OLED_CMD_DISPLAY_NORMAL - 0xA6
 
 uint8_t font8x8[128][8] = {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },   // U+0000 (nul)

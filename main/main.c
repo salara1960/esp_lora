@@ -48,15 +48,14 @@ void app_main()
     if (xTaskCreate(&serial_task, "serial_task", 2048, NULL, 7, NULL) != pdPASS) {
 	ESP_LOGE(TAGM, "Create serial_task failed | FreeMem %u", xPortGetFreeHeapSize());
     }
-    vTaskDelay(500 / portTICK_RATE_MS);
     //**************************************************************
 
 
     //*********************    SSD1306    **************************
     i2c_ssd1306_init();
-
-    ssd1306_off();
     vTaskDelay(500 / portTICK_RATE_MS);
+    ssd1306_off();
+    vTaskDelay(1000 / portTICK_RATE_MS);
 
     esp_err_t ssd_ok = ssd1306_init();
     if (ssd_ok == ESP_OK) ssd1306_pattern();
@@ -66,7 +65,7 @@ void app_main()
     struct tm *dtimka;
     int tu, tn, di_hour, di_min, di_sec;//, di_day, di_mon;//, di_year;
     time_t dit_ct;
-    uint8_t inv_cnt = 30, clr = 0, row = 0;
+    uint8_t clr = 0, row = 0;//, inv_cnt = 30;
     uint32_t adc_tw = get_tmr(1000);
     //**************************************************************
 
@@ -76,11 +75,11 @@ void app_main()
 
 	if (check_tmr(adc_tw)) {
 	    if (ssd_ok == ESP_OK) {
-		inv_cnt--;
-		if (!inv_cnt) {
-		    inv_cnt = 30;
-		    ssd1306_invert();
-		}
+		//inv_cnt--;
+		//if (!inv_cnt) {
+		//    inv_cnt = 30;
+		//    ssd1306_invert();
+		//}
 		if (!clr) {
 		    ssd1306_clear();
 		    clr = 1;
@@ -105,6 +104,7 @@ void app_main()
 	    adc_tw = get_tmr(1000);
 	}
 	if (xQueueReceive(evtq, &evt, 25/portTICK_RATE_MS) == pdTRUE) {
+	    ssd1306_invert();
 	    memset(stz,0,128);
 	    if (!evt.type) {
 		sprintf(stz,"Send");
