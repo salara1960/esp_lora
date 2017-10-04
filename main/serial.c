@@ -101,21 +101,20 @@ void serial_task(void *arg)
 		mode = true;
 		lora_data_mode(mode);//set data mode
 		vTaskDelay(15 / portTICK_RATE_MS);
-		ets_printf("%s[%s] Device %X switch from at_command to data tx/rx mode, listen air...%s\n", MAGENTA_COLOR, TAG_UART, cli_id, STOP_COLOR);
+		ets_printf("%s[%s] Device %X switch from at_command to data tx/rx mode%s\n", MAGENTA_COLOR, TAG_UART, cli_id, STOP_COLOR);
 		len = 0; memset(data, 0, BSIZE);
 		tmsend = get_tmr(0);
 	    } else {//data transfer mode
 		if (check_tmr(tmsend)) {
+		    tmsend = get_tmr(120000);
 		    get_tsensor(&tchip);
 		    dl = sprintf(cmds,"DevID %08X (%u): %.1f v %d deg.C\r\n", cli_id, ++pknum_tx, (double)tchip.vcc/1000, (int)round(tchip.cels));
 		    uart_write_bytes(unum, cmds, dl);
-		    tmsend = get_tmr(300000);
 		    ets_printf("%s[%s] Send : %s%s", MAGENTA_COLOR, TAG_UART, cmds, STOP_COLOR);
 		    evt.type = 0; evt.num = pknum_tx;
 		    if (xQueueSend(evtq, (void *)&evt, (TickType_t)0) != pdPASS) {
 			ESP_LOGE(TAG_UART,"Error while sending to evtq");
 		    }
-
 		}
 	    }
 	    if (uart_read_bytes(unum, &buf, 1, (TickType_t)25) == 1) {
