@@ -34,10 +34,8 @@ void app_main()
     ets_printf("\n\nDevID %X | Appication version %s | SDK Version %s | FreeMem %u\n", cli_id, Version, esp_get_idf_version(), xPortGetFreeHeapSize());
 
 
-
     adc1_config_width(ADC_WIDTH_12Bit);
     adc1_config_channel_atten(ADC1_TEST_CHANNEL, ADC_ATTEN_11db);
-
 
 
     //****************    UART2 (LORA)    **************************
@@ -63,23 +61,17 @@ void app_main()
     t_sens_t tc;
     char stk[128]={0}, stz[128]={0};
     struct tm *dtimka;
-    int tu, tn, di_hour, di_min, di_sec;//, di_day, di_mon;//, di_year;
+    int tu, tn, di_hour, di_min, di_sec;
     time_t dit_ct;
-    uint8_t clr = 0, row = 0;//, inv_cnt = 30;
-    uint32_t adc_tw = get_tmr(1000);
+    uint8_t clr = 0, row = 0;
+    uint32_t adc_tw = 0;
     //**************************************************************
-
 
 
     while (true) {
 
 	if (check_tmr(adc_tw)) {
 	    if (ssd_ok == ESP_OK) {
-		//inv_cnt--;
-		//if (!inv_cnt) {
-		//    inv_cnt = 30;
-		//    ssd1306_invert();
-		//}
 		if (!clr) {
 		    ssd1306_clear();
 		    clr = 1;
@@ -87,7 +79,6 @@ void app_main()
 		dit_ct = time(NULL);
 		dtimka=localtime(&dit_ct);
 		di_hour=dtimka->tm_hour;	di_min=dtimka->tm_min;	di_sec=dtimka->tm_sec;
-		//di_day=dtimka->tm_mday;	di_mon=dtimka->tm_mon+1;	//di_year=dtimka->tm_year+1900;
 		memset(stk,0,128);
 		memset(stz,0,128);
 		sprintf(stz,"%02d:%02d:%02d", di_hour, di_min, di_sec);
