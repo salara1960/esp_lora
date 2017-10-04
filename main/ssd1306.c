@@ -2,8 +2,8 @@
 #include "function.h"
 
 
-#define SDA_PIN GPIO_NUM_14	//13//15
-#define SCL_PIN GPIO_NUM_27	//14//2
+#define SDA_PIN GPIO_NUM_27	//13//15
+#define SCL_PIN GPIO_NUM_14	//14//2
 #define SSD1306_PORT I2C_NUM_1
 #define I2C_CLOCK_HZ 400000	//400KHz	//1600000 - 1.6MHz  -> WORK !!!
 

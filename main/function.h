@@ -81,6 +81,12 @@
 
 #pragma once
 
+#pragma pack(push,1)
+typedef struct {
+    uint32_t num;
+    uint8_t type;
+} s_evt;
+#pragma pack(pop)
 
 #pragma pack(push,1)
 typedef struct {
@@ -90,6 +96,8 @@ typedef struct {
 } t_sens_t;
 #pragma pack(pop)
 extern uint8_t temprature_sens_read();
+
+extern xQueueHandle evtq;
 
 extern uint32_t cli_id;
 

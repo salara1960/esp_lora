@@ -6,7 +6,7 @@ uint8_t *macs = NULL;
 static char sta_mac[18] = {0};
 uint32_t cli_id = 0;
 static const char *TAGM = "MAIN";
-
+xQueueHandle evtq = NULL;
 
 //******************************************************************************************************************
 
@@ -31,7 +31,7 @@ void app_main()
         memcpy(&cli_id, &macs[2], 4);
         cli_id = ntohl(cli_id);
     }
-    ets_printf("\nDevID %X | Appication version %s | SDK Version %s | FreeMem %u\n", cli_id, Version, esp_get_idf_version(), xPortGetFreeHeapSize());
+    ets_printf("\n\nDevID %X | Appication version %s | SDK Version %s | FreeMem %u\n", cli_id, Version, esp_get_idf_version(), xPortGetFreeHeapSize());
 
 
 
@@ -40,17 +40,19 @@ void app_main()
 
 
 
-    //****************    UART2    **************************
+    //****************    UART2 (LORA)    **************************
+    evtq = xQueueCreate(10, sizeof(s_evt));//create a queue to handle uart event
+    s_evt evt;
     serial_init();
     vTaskDelay(500 / portTICK_RATE_MS);
     if (xTaskCreate(&serial_task, "serial_task", 2048, NULL, 7, NULL) != pdPASS) {
 	ESP_LOGE(TAGM, "Create serial_task failed | FreeMem %u", xPortGetFreeHeapSize());
     }
     vTaskDelay(500 / portTICK_RATE_MS);
-    //******************************************************
+    //**************************************************************
 
 
-    //****************    SSD1306    **************************
+    //*********************    SSD1306    **************************
     i2c_ssd1306_init();
 
     ssd1306_off();
@@ -64,9 +66,9 @@ void app_main()
     struct tm *dtimka;
     int tu, tn, di_hour, di_min, di_sec;//, di_day, di_mon;//, di_year;
     time_t dit_ct;
-    uint8_t inv_cnt = 30, clr = 0;//, shift = 0;
+    uint8_t inv_cnt = 30, clr = 0, row = 0;
     uint32_t adc_tw = get_tmr(1000);
-    //******************************************************
+    //**************************************************************
 
 
 
@@ -101,6 +103,20 @@ void app_main()
 		ssd1306_text_xy(stk, 2, 1);
 	    }
 	    adc_tw = get_tmr(1000);
+	}
+	if (xQueueReceive(evtq, &evt, 25/portTICK_RATE_MS) == pdTRUE) {
+	    memset(stz,0,128);
+	    if (!evt.type) {
+		sprintf(stz,"Send");
+		row = 8;
+	    } else {
+		sprintf(stz,"Recv");
+		row = 7;
+	    }
+	    sprintf(stz+strlen(stz)," pack #%u", evt.num);
+	    tu = strlen(stz); tn = 0;
+	    if ( (tu > 0) && (tu <= 16) ) tn = ((16 - tu) / 2) + 1;
+	    ssd1306_text_xy(stz, (uint8_t)tn, row);
 	}
 
     }
