@@ -5,7 +5,7 @@ const char *TAG_UART = "UART";
 const int unum = UART_NUMBER;
 const int uspeed = UART_SPEED;
 const int BSIZE = 128;
-const uint32_t sleep_time = 120000, wait_txd = 15;
+const uint32_t sleep_time = 120000, wait_txd = 1000;
 s_pctrl pctrl = {0, 0, 1, 1, 0};
 
 //******************************************************************************************
@@ -97,24 +97,33 @@ void serial_task(void *arg)
     char *data = (char *)calloc(1, BSIZE + 1);
     if (data) {
 	char cmds[BSIZE];
+	char stx[256];
 	lora_init();
 	vTaskDelay(50 / portTICK_RATE_MS);
 	lora_reset();
 	vTaskDelay(100 / portTICK_RATE_MS);
 	uint32_t len=0, dl=0, pknum_tx=0, pknum_rx=0;
-	uint8_t buf=0, allcmd=0, rd_done=0, mode=false;
-	TickType_t tms=0, tmsend=0;
+	uint8_t buf=0, allcmd=0, rd_done=0;
+	bool mode=false, needs=false;
+	TickType_t tms=0, tmsend=0, tmneeds=0;
 	t_sens_t tchip;
 	s_evt evt;
 
 	while (true) {
 	    while (allcmd < TotalCmd) {//at command loop
+
 		memset(cmds, 0, BSIZE);
 		sprintf(cmds, "%s", at_cmd[allcmd].cmd);
+
+		//if (!strcmp(cmds, "AT+LRSF=")) sprintf(cmds+strlen(cmds),"C");//7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
+		//else if (!strcmp(cmds, "AT+LRSBW=")) sprintf(cmds+strlen(cmds),"8");//6-62.5, 7-125, 8-250, 9-500
+		//else 
 		if (strchr(cmds,'=')) sprintf(cmds+strlen(cmds),"?");
+
 		sprintf(cmds+strlen(cmds),"\r\n");
 		dl = strlen(cmds);
 		ets_printf("%s%s%s", BROWN_COLOR, cmds, STOP_COLOR);
+
 		uart_write_bytes(unum, cmds, dl);//send at_command
 		tms = get_tmr(at_cmd[allcmd].wait);
 		rd_done = 0; len = 0; memset(data, 0, BSIZE);
@@ -149,37 +158,54 @@ void serial_task(void *arg)
 		    dl = sprintf(cmds,"DevID %08X (%u): %.1f v %d deg.C\r\n", cli_id, ++pknum_tx, (double)tchip.vcc/1000, (int)round(tchip.cels));
 
 		    if (!lora_sleep_mode(false))// !!! wakeup !!!
-			ets_printf("%s[%s] Module wakeup and goto normal mode%s\n", MAGENTA_COLOR, TAG_UART, STOP_COLOR);
+			//ets_printf("%s[%s] Module wakeup and goto normal mode%s\n", MAGENTA_COLOR, TAG_UART, STOP_COLOR);
+			printik(TAG_UART, "Module wakeup and goto normal mode", MAGENTA_COLOR);
 
 		    uart_write_bytes(unum, cmds, dl);
-		    ets_printf("%s[%s] Send : %s%s", MAGENTA_COLOR, TAG_UART, cmds, STOP_COLOR);
+		    //ets_printf("%s[%s] Send : %s%s", MAGENTA_COLOR, TAG_UART, cmds, STOP_COLOR);
+		    printik(TAG_UART, cmds, MAGENTA_COLOR);
 		    evt.type = 0; evt.num = pknum_tx;
 		    if (xQueueSend(evtq, (void *)&evt, (TickType_t)0) != pdPASS) {
 			ESP_LOGE(TAG_UART,"Error while sending to evtq");
 		    }
 
-		    vTaskDelay(wait_txd / portTICK_RATE_MS);//wait while data transmiting
-		    if (lora_sleep_mode(true)) ets_printf("%s[%s] Goto sleep mode until %u sec%s\n", MAGENTA_COLOR, TAG_UART, sleep_time/1000, STOP_COLOR);
+		    needs = true;
+		    tmneeds = get_tmr(wait_txd);
+		    //vTaskDelay(wait_txd / portTICK_RATE_MS);//wait while data transmiting
+		    //if (lora_sleep_mode(true)) ets_printf("%s[%s] Goto sleep mode until %u sec%s\n", MAGENTA_COLOR, TAG_UART, sleep_time/1000, STOP_COLOR);
 
 		}
 	    }
-	    if (!lora_check_sleep()) {
-		if (uart_read_bytes(unum, &buf, 1, (TickType_t)25) == 1) {
-		    ets_printf("%s[%s] 0x%02X%s\n", MAGENTA_COLOR, TAG_UART, buf, STOP_COLOR);
+
+//	    if (!lora_check_sleep()) {
+		if (uart_read_bytes(unum, &buf, 1, (TickType_t)20) == 1) {
+		    //ets_printf("%s[%s] 0x%02X%s\n", MAGENTA_COLOR, TAG_UART, buf, STOP_COLOR);
 		    data[len++] = buf;
 		    if ( (strchr(data, '\n')) || (len >= BSIZE - 2) ) {
 			if (!strchr(data,'\n')) sprintf(data,"\n");
-			ets_printf("%s[%s] Recv (%u) : %s%s", MAGENTA_COLOR, TAG_UART, ++pknum_rx, data, STOP_COLOR);
+			//ets_printf("%s[%s] Recv (%u) : %s%s", BROWN_COLOR, TAG_UART, ++pknum_rx, data, STOP_COLOR);
+			memset(stx,0,256); sprintf(stx,"Recv (%u) : %s", ++pknum_rx, data); printik(TAG_UART, stx, BROWN_COLOR);
 			len = 0; memset(data, 0, BSIZE);
 			evt.type = 1; evt.num = pknum_rx;
 			if (xQueueSend(evtq, (void *)&evt, (TickType_t)0) != pdPASS) {
 			    ESP_LOGE(TAG_UART,"Error while sending to evtq");
 			}
+			if (needs) tmneeds = get_tmr(0);
 		    }
+		}
+//	    }
+
+	    if (needs) {
+		if (check_tmr(tmneeds)) {
+		    if (lora_sleep_mode(true)) {
+			//ets_printf("%s[%s] Goto sleep mode until %u sec%s\n", MAGENTA_COLOR, TAG_UART, sleep_time/1000, STOP_COLOR);
+			memset(stx,0,256); sprintf(stx,"Goto sleep mode until %u sec\n\n", sleep_time/1000); printik(TAG_UART, stx, MAGENTA_COLOR);
+		    }
+		    needs = false;
 		}
 	    }
 
-	    vTaskDelay(25 / portTICK_RATE_MS);
+	    //vTaskDelay(25 / portTICK_RATE_MS);
 	}
 
 	vTaskDelay(500 / portTICK_RATE_MS);

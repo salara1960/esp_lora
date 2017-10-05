@@ -23,5 +23,23 @@ uint8_t ret = 0;
 }
 //--------------------------------------------------------------------
 
+void printik(const char *tag, const char *buf, const char *color)
+{
+    int len = strlen(tag) + strlen(buf) + strlen(color) + 64;
+    char *st = (char *)calloc(1, len);
+    if (st) {
+	struct timeval tvl;
+	gettimeofday(&tvl, NULL);
+	time_t it_ct = tvl.tv_sec;
+	struct tm *ctimka=localtime(&it_ct);
+	sprintf(st,"%02d:%02d:%02d.%03d | ", ctimka->tm_hour, ctimka->tm_min, ctimka->tm_sec, (int)(tvl.tv_usec/1000));
+	sprintf(st+strlen(st),"%s[%s]", color, tag);
+	sprintf(st+strlen(st)," : %s%s", buf, STOP_COLOR);
+	if (!strchr(st,'\n')) sprintf(st+strlen(st),"\n");
+	//if (st[strlen(st)-1] != '\n') sprintf(st+strlen(st),"\n");
+	printf(st);
+	free(st);
+    }
 
-
+}
+//--------------------------------------------------------------------
