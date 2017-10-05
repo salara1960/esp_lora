@@ -5,6 +5,7 @@ const char *TAG_UART = "UART";
 const int unum = UART_NUMBER;
 const int uspeed = UART_SPEED;
 const int BSIZE = 128;
+const uint32_t sleep_time = 120000, wait_txd = 15;
 s_pctrl pctrl = {0, 0, 1, 1, 0};
 
 //******************************************************************************************
@@ -29,13 +30,13 @@ void serial_init()
 //-----------------------------------------------------------------------------------------
 void lora_init()
 {
-    gpio_pad_select_gpio(U2_CONFIG); gpio_pad_pulldown(U2_CONFIG); gpio_set_direction(U2_CONFIG, GPIO_MODE_OUTPUT);
+    gpio_pad_select_gpio(U2_CONFIG); /*gpio_pad_pulldown(U2_CONFIG);*/ gpio_set_direction(U2_CONFIG, GPIO_MODE_OUTPUT);
     gpio_set_level(U2_CONFIG, pctrl.config);//0 //set configure mode - at_command
-    gpio_pad_select_gpio(U2_SLEEP); gpio_pad_pulldown(U2_SLEEP); gpio_set_direction(U2_SLEEP, GPIO_MODE_OUTPUT);
+    gpio_pad_select_gpio(U2_SLEEP); /*gpio_pad_pulldown(U2_SLEEP);*/ gpio_set_direction(U2_SLEEP, GPIO_MODE_OUTPUT);
     gpio_set_level(U2_SLEEP, pctrl.sleep);//0 //set no sleep
-    gpio_pad_select_gpio(U2_STATUS); gpio_pad_pullup(U2_STATUS); gpio_set_direction(U2_RESET, GPIO_MODE_INPUT);
+    gpio_pad_select_gpio(U2_STATUS); /*gpio_pad_pullup(U2_STATUS);*/ gpio_set_direction(U2_RESET, GPIO_MODE_INPUT);
     pctrl.status = gpio_get_level(U2_STATUS);
-    gpio_pad_select_gpio(U2_RESET); gpio_pad_pullup(U2_RESET); gpio_set_direction(U2_RESET, GPIO_MODE_OUTPUT);
+    gpio_pad_select_gpio(U2_RESET); /*gpio_pad_pullup(U2_RESET);*/ gpio_set_direction(U2_RESET, GPIO_MODE_OUTPUT);
     gpio_set_level(U2_RESET, pctrl.reset);//1 //set no reset
 }
 //-----------------------------------------------------------------------------------------
@@ -52,6 +53,40 @@ void lora_data_mode(bool cnf)//true - data mode, false - at_command mode
 {
     if (cnf) pctrl.config = 1; else pctrl.config = 0;
     gpio_set_level(U2_CONFIG, pctrl.config);//0 - configure mode (at_command), 1 - data transfer mode
+}
+//-----------------------------------------------------------------------------------------
+bool lora_sleep_mode(bool slp)//true - sleep mode, false - normal mode
+{
+    if (slp) {
+	if (pctrl.sleep) return (bool)pctrl.sleep;//already sleep mode
+	pctrl.sleep = 1;
+    } else {
+	if (!pctrl.sleep) return (bool)pctrl.sleep;//already normal mode
+	pctrl.sleep = 0;
+    }
+    gpio_set_level(U2_SLEEP, pctrl.sleep);
+
+    if (!pctrl.sleep) {
+	uint8_t sch = 12;
+	while ( sch-- && !(pctrl.status = gpio_get_level(U2_STATUS)) ) vTaskDelay(1 / portTICK_RATE_MS);
+//	if (!(pctrl.status = gpio_get_level(U2_STATUS))) vTaskDelay(25 / portTICK_RATE_MS);//wait status=high (20 ms)
+    }// else {
+//	if ((pctrl.status = gpio_get_level(U2_STATUS))) vTaskDelay(25 / portTICK_RATE_MS);//wait status=low (20 ms)
+//    }
+
+    return (bool)pctrl.sleep;
+}
+//-----------------------------------------------------------------------------------------
+bool lora_check_sleep()
+{
+    return (bool)pctrl.sleep;
+}
+//-----------------------------------------------------------------------------------------
+bool lora_check_status()
+{
+    pctrl.status = gpio_get_level(U2_STATUS);
+
+    return (bool)pctrl.status;
 }
 //-----------------------------------------------------------------------------------------
 void serial_task(void *arg)
@@ -101,36 +136,50 @@ void serial_task(void *arg)
 		mode = true;
 		lora_data_mode(mode);//set data mode
 		vTaskDelay(15 / portTICK_RATE_MS);
-		ets_printf("%s[%s] Device %X switch from at_command to data tx/rx mode%s\n", MAGENTA_COLOR, TAG_UART, cli_id, STOP_COLOR);
 		len = 0; memset(data, 0, BSIZE);
-		tmsend = get_tmr(0);
+
+		lora_sleep_mode(true);// !!! set sleep mode !!!
+
+		ets_printf("%s[%s] Device %X switch from at_command to data tx/rx mode and goto sleep%s\n", MAGENTA_COLOR, TAG_UART, cli_id, STOP_COLOR);
+		tmsend = get_tmr(2000);
 	    } else {//data transfer mode
 		if (check_tmr(tmsend)) {
-		    tmsend = get_tmr(120000);
+		    tmsend = get_tmr(sleep_time);
 		    get_tsensor(&tchip);
 		    dl = sprintf(cmds,"DevID %08X (%u): %.1f v %d deg.C\r\n", cli_id, ++pknum_tx, (double)tchip.vcc/1000, (int)round(tchip.cels));
+
+		    if (!lora_sleep_mode(false))// !!! wakeup !!!
+			ets_printf("%s[%s] Module wakeup and goto normal mode%s\n", MAGENTA_COLOR, TAG_UART, STOP_COLOR);
+
 		    uart_write_bytes(unum, cmds, dl);
 		    ets_printf("%s[%s] Send : %s%s", MAGENTA_COLOR, TAG_UART, cmds, STOP_COLOR);
 		    evt.type = 0; evt.num = pknum_tx;
 		    if (xQueueSend(evtq, (void *)&evt, (TickType_t)0) != pdPASS) {
 			ESP_LOGE(TAG_UART,"Error while sending to evtq");
 		    }
+
+		    vTaskDelay(wait_txd / portTICK_RATE_MS);//wait while data transmiting
+		    if (lora_sleep_mode(true)) ets_printf("%s[%s] Goto sleep mode until %u sec%s\n", MAGENTA_COLOR, TAG_UART, sleep_time/1000, STOP_COLOR);
+
 		}
 	    }
-	    if (uart_read_bytes(unum, &buf, 1, (TickType_t)25) == 1) {
-		ets_printf("%s[%s] 0x%02X%s\n", MAGENTA_COLOR, TAG_UART, buf, STOP_COLOR);
-		data[len++] = buf;
-		if ( (strchr(data, '\n')) || (len >= BSIZE - 2) ) {
-		    if (!strchr(data,'\n')) sprintf(data,"\n");
-		    ets_printf("%s[%s] Recv (%u) : %s%s", MAGENTA_COLOR, TAG_UART, ++pknum_rx, data, STOP_COLOR);
-		    len = 0; memset(data, 0, BSIZE);
-		    evt.type = 1; evt.num = pknum_rx;
-		    if (xQueueSend(evtq, (void *)&evt, (TickType_t)0) != pdPASS) {
-			ESP_LOGE(TAG_UART,"Error while sending to evtq");
+	    if (!lora_check_sleep()) {
+		if (uart_read_bytes(unum, &buf, 1, (TickType_t)25) == 1) {
+		    ets_printf("%s[%s] 0x%02X%s\n", MAGENTA_COLOR, TAG_UART, buf, STOP_COLOR);
+		    data[len++] = buf;
+		    if ( (strchr(data, '\n')) || (len >= BSIZE - 2) ) {
+			if (!strchr(data,'\n')) sprintf(data,"\n");
+			ets_printf("%s[%s] Recv (%u) : %s%s", MAGENTA_COLOR, TAG_UART, ++pknum_rx, data, STOP_COLOR);
+			len = 0; memset(data, 0, BSIZE);
+			evt.type = 1; evt.num = pknum_rx;
+			if (xQueueSend(evtq, (void *)&evt, (TickType_t)0) != pdPASS) {
+			    ESP_LOGE(TAG_UART,"Error while sending to evtq");
+			}
 		    }
 		}
 	    }
 
+	    vTaskDelay(25 / portTICK_RATE_MS);
 	}
 
 	vTaskDelay(500 / portTICK_RATE_MS);
