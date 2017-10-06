@@ -52,7 +52,7 @@ void app_main()
     uint8_t col = 0, row = 0, blk = 0, cnt = 0xff;
     uint32_t kol=0;
     TickType_t adc_tw = 0, wst = 0;
-    const uint8_t sub_val = 7;
+    const uint8_t sub_val = 5;
     const TickType_t sub_tmr = 100;
 
     vTaskDelay(1000 / portTICK_RATE_MS);
@@ -76,6 +76,7 @@ void app_main()
 	}
 
 	if (xQueueReceive(evtq, &evt, 10/portTICK_RATE_MS) == pdTRUE) {
+	    ssd1306_on(); //display on
 	    ssd1306_contrast(cnt);
 	    memset(stk,0,128);
 	    if (!evt.type) {
@@ -88,23 +89,20 @@ void app_main()
 	    sprintf(stk+strlen(stk)," pack #%u", evt.num);
 	    col = calcx(strlen(stk));
 	    ssd1306_text_xy(stk, col, row);
-	    //vTaskDelay(50 / portTICK_RATE_MS);
-	    if (!blk) {
-		blk = 1;
-		kol = 0;
-		wst = get_tmr(sub_tmr);
+	    if (!blk) {// for start contrast play
+		blk = 1; kol = 0; wst = get_tmr(sub_tmr);
 	    }
 	}
 
-	if (blk) {
+	if (blk) {//contrast play
 	    if (check_tmr(wst)) {
 		kol++;
 		if (cnt >= sub_val) cnt -= sub_val; else cnt = 0;
 		ssd1306_contrast(cnt);
-		//memset(stz,0,128); sprintf(stz,"Contrast value=0x%u iter=%u\n", cnt, kol); printik(TAGM, stz, WHITE_COLOR);
+		//memset(stz,0,128); sprintf(stz,"Contrast value=%u iter=%u\n\n", cnt, kol); printik(TAGM, stz, GREEN_COLOR);
 		if (!cnt) {
-		    cnt = 0xff;
-		    blk = 0;
+		    cnt = 0xff; blk = ~cnt; // stop contrast play
+		    ssd1306_off(); //display off
 		}
 		wst = get_tmr(sub_tmr);
 	    }

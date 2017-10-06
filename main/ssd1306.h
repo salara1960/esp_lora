@@ -49,7 +49,7 @@
 // Charge Pump (pg.62)
 #define OLED_CMD_SET_CHARGE_PUMP        0x8D    // follow with 0x14
 
-
+extern esp_err_t ssd1306_on();
 extern esp_err_t ssd1306_off();
 extern void i2c_ssd1306_init();
 extern esp_err_t ssd1306_init();
