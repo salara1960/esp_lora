@@ -26,7 +26,7 @@
     #pragma pack(pop)
 
     extern const char *TAG_UART;
-
+    extern bool lora_start;
     extern void serial_init();
     extern void serial_task(void *arg);
 

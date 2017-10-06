@@ -20,7 +20,6 @@
 #include "driver/adc.h"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
-
 #include "driver/i2c.h"
 
 #include "esp_system.h"
@@ -28,8 +27,8 @@
 #include "esp_wifi.h"
 #include "esp_event_loop.h"
 #include "esp_log.h"
-#include "nvs_flash.h"
-#include "nvs.h"
+//#include "nvs_flash.h"
+//#include "nvs.h"
 #include "esp_partition.h"
 #include "esp_attr.h"
 #include "esp_err.h"
@@ -37,11 +36,12 @@
 #include "esp_vfs.h"
 #include "esp_vfs_fat.h"
 #include <esp_intr.h>
-
+#include "esp_sleep.h"
 #include "esp_types.h"
-#include "stdatomic.h"
 
-#include "tcpip_adapter.h"
+//#include "stdatomic.h"
+
+//#include "tcpip_adapter.h"
 
 #include "rom/ets_sys.h"
 #include "soc/soc.h"
@@ -51,14 +51,14 @@
 #include <soc/dport_reg.h>
 #include <soc/gpio_sig_map.h>
 
-#include "lwip/ip_addr.h"
-#include "lwip/err.h"
-#include "lwip/sockets.h"
-#include "lwip/sys.h"
-#include "lwip/netdb.h"
-#include "lwip/dns.h"
-#include "lwip/api.h"
-#include "lwip/netif.h"
+//#include "lwip/ip_addr.h"
+//#include "lwip/err.h"
+//#include "lwip/sockets.h"
+//#include "lwip/sys.h"
+//#include "lwip/netdb.h"
+//#include "lwip/dns.h"
+//#include "lwip/api.h"
+//#include "lwip/netif.h"
 
 
 #define BLACK_COLOR  "\x1B[30m"
