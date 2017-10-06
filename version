@@ -1,3 +1,4 @@
-static const char *Version = "0.3";//05.10.2017
+static const char *Version = "0.3";//06.10.2017
+//static const char *Version = "0.3";//05.10.2017
 //static const char *Version = "0.2";//04.10.2017
 //static const char *Version = "0.1";//04.10.2017

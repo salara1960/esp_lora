@@ -46,47 +46,68 @@ void app_main()
     vTaskDelay(1000 / portTICK_RATE_MS);
 
     t_sens_t tc;
-    char stk[128]={0}, stz[128]={0};
+    char stk[128]={0};//, stz[128]={0};
     struct tm *dtimka;
-    int tu, tn, di_hour, di_min, di_sec;
     time_t dit_ct;
-    uint8_t row = 0;
-    TickType_t adc_tw = 0;
+    uint8_t col = 0, row = 0, blk = 0, cnt = 0xff;
+    uint32_t kol=0;
+    TickType_t adc_tw = 0, wst = 0;
+    const uint8_t sub_val = 7;
+    const TickType_t sub_tmr = 100;
 
     vTaskDelay(1000 / portTICK_RATE_MS);
+    ssd1306_contrast(cnt);
     ssd1306_clear();
+
     //**************************************************************
 
 
     while (true) {
 
 	if (check_tmr(adc_tw)) {
+	    adc_tw = get_tmr(1000);
 	    dit_ct = time(NULL);
 	    dtimka=localtime(&dit_ct);
-	    di_hour=dtimka->tm_hour;	di_min=dtimka->tm_min;	di_sec=dtimka->tm_sec;
 	    memset(stk,0,128);
-	    tu = sprintf(stk,"%02d:%02d:%02d", di_hour, di_min, di_sec);
-	    tn=0; if ( (tu > 0) && (tu < 16) ) tn = ((16 - tu) / 2) + 1;
+	    col = calcx(sprintf(stk,"%02d:%02d:%02d", dtimka->tm_hour, dtimka->tm_min, dtimka->tm_sec));
 	    get_tsensor(&tc);
 	    sprintf(stk+strlen(stk),"\nChip : %.1fv %d%cC", (double)tc.vcc/1000, (int)round(tc.cels), 0x1F);
-	    ssd1306_text_xy(stk, (uint8_t)tn, 1);
-	    adc_tw = get_tmr(1000);
-	} else vTaskDelay(100 / portTICK_RATE_MS);
+	    ssd1306_text_xy(stk, col, 1);
+	}
 
 	if (xQueueReceive(evtq, &evt, 10/portTICK_RATE_MS) == pdTRUE) {
-	    //ssd1306_invert();
-	    memset(stz,0,128);
+	    ssd1306_contrast(cnt);
+	    memset(stk,0,128);
 	    if (!evt.type) {
-		sprintf(stz,"Send");
-		row = 8;
-	    } else {
-		sprintf(stz,"Recv");
+		sprintf(stk,"Send");
 		row = 7;
+	    } else {
+		sprintf(stk,"Recv");
+		row = 8;
 	    }
-	    sprintf(stz+strlen(stz)," pack #%u", evt.num);
-	    tu = strlen(stz); tn = 0;
-	    if ( (tu > 0) && (tu <= 16) ) tn = ((16 - tu) / 2) + 1;
-	    ssd1306_text_xy(stz, (uint8_t)tn, row);
+	    sprintf(stk+strlen(stk)," pack #%u", evt.num);
+	    col = calcx(strlen(stk));
+	    ssd1306_text_xy(stk, col, row);
+	    //vTaskDelay(50 / portTICK_RATE_MS);
+	    if (!blk) {
+		blk = 1;
+		kol = 0;
+		wst = get_tmr(sub_tmr);
+	    }
+	}
+
+	if (blk) {
+	    if (check_tmr(wst)) {
+		kol++;
+		if (cnt >= sub_val) cnt -= sub_val; else cnt = 0;
+		ssd1306_contrast(cnt);
+		//memset(stz,0,128); sprintf(stz,"Contrast value=0x%u iter=%u\n", cnt, kol); printik(TAGM, stz, WHITE_COLOR);
+		if (!cnt) {
+		    cnt = 0xff;
+		    blk = 0;
+		}
+		wst = get_tmr(sub_tmr);
+	    }
 	}
 
     }
