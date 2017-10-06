@@ -110,8 +110,12 @@ void app_main()
 	    sprintf(stk+strlen(stk)," pack #%u", evt.num);
 	    col = calcx(strlen(stk));
 	    ssd1306_text_xy(stk, col, row);
+
 	    if (!blk) {// for start contrast play
 		blk = 1; kol = 0; wst = get_tmr(sub_tmr);
+		memset(stk,0,128);
+		col = calcx(sprintf(stk,"Goto sleep..."));
+		ssd1306_text_xy(stk, col, 5);
 	    }
 	}
 
