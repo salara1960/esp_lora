@@ -131,8 +131,19 @@ char stx[256]={0};
 		sprintf(cmds, "%s", at_cmd[allcmd].cmd);
 
 		//if (!strcmp(cmds, "AT+LRSF=")) sprintf(cmds+strlen(cmds),"C");//7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
-		//else if (!strcmp(cmds, "AT+LRSBW=")) sprintf(cmds+strlen(cmds),"8");//6-62.5, 7-125, 8-250, 9-500
+		//else if (!strcmp(cmds, "AT+LRSBW=")) sprintf(cmds+strlen(cmds),"7");//6-62.5, 7-125, 8-250, 9-500
 		//else 
+		//if (!strcmp(cmds, "AT+NODE=")) sprintf(cmds+strlen(cmds),"0,0");//AT+NODE=n,m -> n: 0—disable, 1—enable; mode: 0—only match NID, 1-match NID and BID
+		//else
+		//if (!strcmp(cmds, "AT+NID=")) sprintf(cmds+strlen(cmds),"0");//0xBC//In FSK mode. The node ID can be set 0..255
+		//if (!strcmp(cmds, "AT+SYNW=")) sprintf(cmds+strlen(cmds),"C405EF90");//AT+SYNW=1234ABEF\r\n (if sync word is 0x12,0x34,0xAB,0xEF)
+		//else
+		//if (!strcmp(cmds, "AT+SYNL=")) sprintf(cmds+strlen(cmds),"4");//set sync word len // 0..8
+		//else
+		if (!strcmp(cmds, "AT+POWER=")) sprintf(cmds+strlen(cmds),"3");//set POWER to 20dbm //0—20dbm 5—8dbm, 1—17dbm 6—5dbm, 2—15dbm 7—2dbm, 3—10dbm
+		else
+		if (!strcmp(cmds, "AT+CS=")) sprintf(cmds+strlen(cmds),"A");//set Channel Select to 10 //0..F — 0..15 channel
+		else
 		if (strchr(cmds,'=')) sprintf(cmds+strlen(cmds),"?");
 
 		sprintf(cmds+strlen(cmds),"\r\n");
@@ -164,7 +175,7 @@ char stx[256]={0};
 
 		lora_sleep_mode(true);// !!! set sleep mode !!!
 
-		ets_printf("%s[%s] Device %X switch from at_command to data tx/rx mode and goto sleep%s\n", MAGENTA_COLOR, TAG_UART, cli_id, STOP_COLOR);
+		ets_printf("\n%s[%s] Device %X switch from at_command to data tx/rx mode and goto sleep%s\n", MAGENTA_COLOR, TAG_UART, cli_id, STOP_COLOR);
 		tmsend = get_tmr(2000);
 	    } else {//data transfer mode
 		if (check_tmr(tmsend)) {

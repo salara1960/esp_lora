@@ -3,7 +3,7 @@
 
 #define WAKEUP_PIN 4
 #define WAKEUP_LEVEL 1
-#define WAKEUP_TIME (300)
+#define WAKEUP_TIME (120)
 
 //******************************************************************************************************************
 
@@ -136,7 +136,7 @@ void app_main()
 
 	if (!don) {
 	    while (lora_start) vTaskDelay(100 / portTICK_RATE_MS);
-	    memset(stk,0,128); sprintf(stk,"Goto light-sleep mode\n\n"); printik(TAGM, stk, GREEN_COLOR);
+	    memset(stk,0,128); sprintf(stk,"Goto light-sleep mode (%u sec)\n\n", WAKEUP_TIME); printik(TAGM, stk, GREEN_COLOR);
 	    esp_light_sleep_start();//goto sleep mode
 
 	    memset(stk,0,128);
