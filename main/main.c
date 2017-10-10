@@ -13,11 +13,6 @@ void app_main()
 
     vTaskDelay(3000 / portTICK_RATE_MS);
 
-//    esp_err_t esp_bluedroid_disable();
-//    esp_err_t esp_bt_controller_disable();
-//    esp_wifi_stop();
-//    esp_wifi_deinit();
-
 
     uint8_t *macs = (uint8_t *)calloc(1, 6);
     if (macs) {

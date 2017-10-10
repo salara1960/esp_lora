@@ -5,9 +5,9 @@ const char *TAG_UART = "UART";
 const int unum = UART_NUMBER;
 const int uspeed = UART_SPEED;
 const int BSIZE = 128;
-const uint32_t sleep_time = 120000, wait_txd = 1000;
+const uint32_t wait_ack = 2000;
 s_pctrl pctrl = {0, 0, 1, 1, 0};
-bool lora_start = false;
+bool lora_start = false, ts_set = false;
 static uint8_t allcmd=0;
 static uint32_t pknum_tx=0;
 static uint32_t pknum_rx=0;
@@ -103,6 +103,8 @@ void serial_task(void *arg)
 {
 lora_start = true;
 char stx[256]={0};
+char *uks=NULL, *uke=NULL;
+
 
     sprintf(stx, "Start serial_task (%d) | FreeMem %u\n", TotalCmd, xPortGetFreeHeapSize()); printik(TAG_UART, stx, CYAN_COLOR);
 
@@ -115,11 +117,11 @@ char stx[256]={0};
 	lora_reset();
 	vTaskDelay(100 / portTICK_RATE_MS);
 
-	char cmds[BSIZE];
+	char cmds[BSIZE], tmp[32]={0};
 	uint32_t len=0, dl=0;
 	uint8_t buf=0, rd_done=0;
 	bool needs=false;
-	TickType_t tms=0, tmsend=0, tmneeds=0;
+	TickType_t tms=0, tmneeds=0;
 	t_sens_t tchip;
 	s_evt evt;
 
@@ -131,8 +133,9 @@ char stx[256]={0};
 		sprintf(cmds, "%s", at_cmd[allcmd].cmd);
 
 		//if (!strcmp(cmds, "AT+LRSF=")) sprintf(cmds+strlen(cmds),"C");//7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
-		//else if (!strcmp(cmds, "AT+LRSBW=")) sprintf(cmds+strlen(cmds),"7");//6-62.5, 7-125, 8-250, 9-500
 		//else 
+		//if (!strcmp(cmds, "AT+LRSBW=")) sprintf(cmds+strlen(cmds),"7");//6-62.5, 7-125, 8-250, 9-500
+		//else
 		//if (!strcmp(cmds, "AT+NODE=")) sprintf(cmds+strlen(cmds),"0,0");//AT+NODE=n,m -> n: 0—disable, 1—enable; mode: 0—only match NID, 1-match NID and BID
 		//else
 		//if (!strcmp(cmds, "AT+NID=")) sprintf(cmds+strlen(cmds),"0");//0xBC//In FSK mode. The node ID can be set 0..255
@@ -140,10 +143,18 @@ char stx[256]={0};
 		//else
 		//if (!strcmp(cmds, "AT+SYNL=")) sprintf(cmds+strlen(cmds),"4");//set sync word len // 0..8
 		//else
-		if (!strcmp(cmds, "AT+POWER=")) sprintf(cmds+strlen(cmds),"3");//set POWER to 20dbm //0—20dbm 5—8dbm, 1—17dbm 6—5dbm, 2—15dbm 7—2dbm, 3—10dbm
+		if (!strcmp(cmds, "AT+POWER=")) sprintf(cmds+strlen(cmds),"3");//set POWER to 20dbm
+									    //0—20dbm
+									    //1—17dbm
+									    //2—15dbm
+									    //3—10dbm
+									    //4-???
+									    //5—8dbm
+									    //6—5dbm
+									    //7—2dbm
 		else
-		if (!strcmp(cmds, "AT+CS=")) sprintf(cmds+strlen(cmds),"A");//set Channel Select to 10 //0..F — 0..15 channel
-		else
+//		if (!strcmp(cmds, "AT+CS=")) sprintf(cmds+strlen(cmds),"A");//set Channel Select to 10 //0..F — 0..15 channel
+//		else
 		if (strchr(cmds,'=')) sprintf(cmds+strlen(cmds),"?");
 
 		sprintf(cmds+strlen(cmds),"\r\n");
@@ -172,17 +183,16 @@ char stx[256]={0};
 		lora_data_mode(mode);//set data mode
 		vTaskDelay(15 / portTICK_RATE_MS);
 		len = 0; memset(data, 0, BSIZE);
-
-		lora_sleep_mode(true);// !!! set sleep mode !!!
-
 		ets_printf("\n%s[%s] Device %X switch from at_command to data tx/rx mode and goto sleep%s\n", MAGENTA_COLOR, TAG_UART, cli_id, STOP_COLOR);
-		tmsend = get_tmr(2000);
+		needs = false;
 	    } else {//data transfer mode
-		if (check_tmr(tmsend)) {
-		    tmsend = get_tmr(sleep_time);
+		if (!needs) {
 		    get_tsensor(&tchip);
-		    dl = sprintf(cmds,"DevID %08X (%u): %.1f v %d deg.C\r\n", cli_id, ++pknum_tx, (double)tchip.vcc/1000, (int)round(tchip.cels));
-
+		    if (ts_set) {
+			dl = sprintf(cmds,"DevID %08X (%u): %.1fv %ddeg.C\r\n", cli_id, ++pknum_tx, (double)tchip.vcc/1000, (int)round(tchip.cels));
+		    } else {
+			dl = sprintf(cmds,"DevID %08X (%u) TS: %.1fv %ddeg.C\r\n", cli_id, ++pknum_tx, (double)tchip.vcc/1000, (int)round(tchip.cels));
+		    }
 		    if (!lora_sleep_mode(false)) {}// !!! wakeup !!!
 			//printik(TAG_UART, "Module wakeup and goto normal mode", MAGENTA_COLOR);
 
@@ -194,8 +204,7 @@ char stx[256]={0};
 		    }
 
 		    needs = true;
-		    tmneeds = get_tmr(wait_txd);
-
+		    tmneeds = get_tmr(wait_ack);
 		}
 	    }
 
@@ -204,6 +213,26 @@ char stx[256]={0};
 		if ( (strchr(data, '\n')) || (len >= BSIZE - 2) ) {
 		    if (!strchr(data,'\n')) sprintf(data,"\n");
 		    memset(stx,0,256); sprintf(stx,"Recv (%u) : %s", ++pknum_rx, data); printik(TAG_UART, stx, BROWN_COLOR);
+		    if (!ts_set) {
+			uks = strstr(data, "TS[");
+			if (uks) {
+			    uks += 3;
+			    uke = strchr(uks,':');
+			    if (uke) {
+				memset(tmp,0,32);
+				memcpy(tmp, uks, (uint32_t)((uke-uks))&0x0F);//timestamp
+				SNTP_SET_SYSTEM_TIME_US( (time_t)atoi(tmp), 0 );
+				uks = uke + 1;
+				uke = strchr(uks,']');
+				if (uke) {
+				    *uke = '\0';
+				    setenv("TZ", uks, 1);
+				    tzset();
+				    ts_set = true;
+				}
+			    }
+			}
+		    }
 		    len = 0; memset(data, 0, BSIZE);
 		    evt.type = 1; evt.num = pknum_rx;
 		    if (xQueueSend(evtq, (void *)&evt, (TickType_t)0) != pdPASS) {
