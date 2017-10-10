@@ -117,7 +117,7 @@ s_at_cmd at_cmd[] = {
         .ack = ack_ok,
         .wait = 5000,
     }//,
-//   {//21//save profile to dataflash
+//    {//21//save profile to dataflash
 //        .cmd = "AT&W",
 //        .ack = ack_ok,
 //        .wait = wait_ack_def,

@@ -143,17 +143,9 @@ char *uks=NULL, *uke=NULL;
 		//else
 		//if (!strcmp(cmds, "AT+SYNL=")) sprintf(cmds+strlen(cmds),"4");//set sync word len // 0..8
 		//else
-		if (!strcmp(cmds, "AT+POWER=")) sprintf(cmds+strlen(cmds),"3");//set POWER to 20dbm
-									    //0—20dbm
-									    //1—17dbm
-									    //2—15dbm
-									    //3—10dbm
-									    //4-???
-									    //5—8dbm
-									    //6—5dbm
-									    //7—2dbm
-		else
-//		if (!strcmp(cmds, "AT+CS=")) sprintf(cmds+strlen(cmds),"A");//set Channel Select to 10 //0..F — 0..15 channel
+//		if (!strcmp(cmds, "AT+POWER=")) sprintf(cmds+strlen(cmds),"3");//set POWER to 20dbm //0—20dbm//1—17dbm//2—15dbm//3—10dbm//4-???//5—8dbm//6—5dbm//7—2dbm
+//		else
+//		if (!strcmp(cmds, "AT+CS=")) sprintf(cmds+strlen(cmds),"B");//set Channel Select to 10 //0..F — 0..15 channel
 //		else
 		if (strchr(cmds,'=')) sprintf(cmds+strlen(cmds),"?");
 
