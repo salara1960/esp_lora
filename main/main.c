@@ -52,7 +52,7 @@ void app_main()
     //*********************    SSD1306    **************************
     i2c_ssd1306_init();
     vTaskDelay(500 / portTICK_RATE_MS);
-    ssd1306_off();
+    ssd1306_on(false);
     vTaskDelay(1000 / portTICK_RATE_MS);
 
     ssd1306_init();
@@ -91,7 +91,7 @@ void app_main()
 	}
 
 	if (xQueueReceive(evtq, &evt, 10/portTICK_RATE_MS) == pdTRUE) {
-	    ssd1306_on(); //display on
+	    ssd1306_on(true); //display on
 	    don = true;
 	    ssd1306_contrast(cnt);
 	    memset(stk,0,128);
@@ -122,7 +122,7 @@ void app_main()
 		//memset(stz,0,128); sprintf(stz,"Contrast value=%u iter=%u\n\n", cnt, kol); printik(TAGM, stz, GREEN_COLOR);
 		if (!cnt) {
 		    cnt = 0xff; blk = ~cnt; // stop contrast play
-		    ssd1306_off(); //display off
+		    ssd1306_on(false); //display off
 		    don = false;
 		}
 		wst = get_tmr(sub_tmr);
@@ -136,7 +136,7 @@ void app_main()
 
 	    // !!!----------- Wakeup ------------!!!
 	    don = true;
-	    ssd1306_on();
+	    ssd1306_on(true);
 	    ssd1306_contrast(cnt);
 	    if (!lora_start) {
 		if (xTaskCreate(&serial_task, "serial_task", 4096, NULL, 7, NULL) != pdPASS) {

@@ -153,36 +153,26 @@ void i2c_ssd1306_init()
     i2c_driver_install(SSD1306_PORT, I2C_MODE_MASTER, 0, 0, 0);
 }
 //-----------------------------------------------------------------------------------------
-esp_err_t ssd1306_on()
+esp_err_t ssd1306_on(bool flag)
 {
 i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+uint8_t byte;
+
+    if (flag) byte = OLED_CMD_DISPLAY_ON; else byte = OLED_CMD_DISPLAY_OFF;
 
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, true);
     i2c_master_write_byte(cmd, OLED_CONTROL_BYTE_CMD_SINGLE, true);
-    i2c_master_write_byte(cmd, OLED_CMD_DISPLAY_ON, true);
+
+    i2c_master_write_byte(cmd, byte, true);
     i2c_master_stop(cmd);
     esp_err_t ret = i2c_master_cmd_begin(SSD1306_PORT, cmd, 20/portTICK_PERIOD_MS);
     if (ret != ESP_OK) {
-	ESP_LOGE(TAG_OLED, "[%s] Display ON ERROR ! (0x%.2X)", __func__, ret);
-    }
-    i2c_cmd_link_delete(cmd);
-
-    return ret;
-}
-//-----------------------------------------------------------------------------------------
-esp_err_t ssd1306_off()
-{
-i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, OLED_CONTROL_BYTE_CMD_SINGLE, true);
-    i2c_master_write_byte(cmd, OLED_CMD_DISPLAY_OFF, true);
-    i2c_master_stop(cmd);
-    esp_err_t ret = i2c_master_cmd_begin(SSD1306_PORT, cmd, 20/portTICK_PERIOD_MS);
-    if (ret != ESP_OK) {
-	ESP_LOGE(TAG_OLED, "[%s] Display OFF ERROR ! (0x%.2X)", __func__, ret);
+	if (flag) {
+	    ESP_LOGE(TAG_OLED, "[%s] Display ON ERROR ! (0x%.2X)", __func__, ret);
+	} else {
+	    ESP_LOGE(TAG_OLED, "[%s] Display OFF ERROR ! (0x%.2X)", __func__, ret);
+	}
     }
     i2c_cmd_link_delete(cmd);
 
