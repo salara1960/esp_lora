@@ -2,7 +2,7 @@
 #include "../version"
 
 #define WAKEUP_PIN 4
-#define WAKEUP_LEVEL 1
+#define WAKEUP_PIN_LEVEL 1
 #define WAKEUP_TIME (300)
 
 //******************************************************************************************************************
@@ -30,7 +30,7 @@ void app_main()
 
     //****************    SET WAKEUP PARAM    **************************
     gpio_num_t w_pin = WAKEUP_PIN;
-    int w_level = WAKEUP_LEVEL;
+    int w_level = WAKEUP_PIN_LEVEL;
     esp_sleep_enable_ext0_wakeup(w_pin, w_level);
     uint64_t time_in_us = WAKEUP_TIME * 1000000;
     esp_sleep_enable_timer_wakeup(time_in_us);
@@ -60,7 +60,7 @@ void app_main()
     vTaskDelay(1000 / portTICK_RATE_MS);
 
     t_sens_t tc;
-    char stk[128]={0};//, stz[128]={0};
+    char stk[128]={0};
     struct tm *dtimka;
     time_t dit_ct;
     uint8_t col = 0, row = 0, blk = 0, cnt = 0xff, don=true;
@@ -133,30 +133,12 @@ void app_main()
 	    while (lora_start) vTaskDelay(100 / portTICK_RATE_MS);
 	    memset(stk,0,128); sprintf(stk,"Goto light-sleep mode (%u sec)\n\n", WAKEUP_TIME); printik(TAGM, stk, GREEN_COLOR);
 	    esp_light_sleep_start();//goto sleep mode
-/*
-	    memset(stk,0,128);
-	    esp_sleep_wakeup_cause_t ca = esp_sleep_get_wakeup_cause();
-	    switch (ca) {
-		case ESP_SLEEP_WAKEUP_EXT0:
-		case ESP_SLEEP_WAKEUP_EXT1:
-		    sprintf(stk,"Wakeup from GPIO %d level %d !!!\n", w_pin, w_level); 
-		break;
-		case ESP_SLEEP_WAKEUP_TIMER:
-		    sprintf(stk,"Wakeup from timer (%u sec) !!!\n", WAKEUP_TIME);
-		break;
-		case ESP_SLEEP_WAKEUP_TOUCHPAD:
-		    sprintf(stk,"Wakeup from touchpad !!!\n");
-		break;
-		case ESP_SLEEP_WAKEUP_ULP:
-		    sprintf(stk,"Wakeup from ULP !!!\n");
-		break;
-		    default : sprintf(stk,"Wakeup from undefined source (%u) !!!\n", ca);
-	    }
-	    printik(TAGM, stk, GREEN_COLOR);
-*/
-	    ssd1306_on(); don = true;
+
+	    // !!!----------- Wakeup ------------!!!
+	    don = true;
+	    ssd1306_on();
 	    ssd1306_contrast(cnt);
-	    if (lora_start == false) {
+	    if (!lora_start) {
 		if (xTaskCreate(&serial_task, "serial_task", 4096, NULL, 7, NULL) != pdPASS) {
 		    ESP_LOGE(TAGM, "Create serial_task failed | FreeMem %u", xPortGetFreeHeapSize());
 		}
