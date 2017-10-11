@@ -79,10 +79,7 @@ bool lora_sleep_mode(bool slp)//true - sleep mode, false - normal mode
     if (!pctrl.sleep) {
 	uint8_t sch = 12;
 	while ( sch-- && !(pctrl.status = gpio_get_level(U2_STATUS)) ) vTaskDelay(1 / portTICK_RATE_MS);
-//	if (!(pctrl.status = gpio_get_level(U2_STATUS))) vTaskDelay(25 / portTICK_RATE_MS);//wait status=high (20 ms)
-    }// else {
-//	if ((pctrl.status = gpio_get_level(U2_STATUS))) vTaskDelay(25 / portTICK_RATE_MS);//wait status=low (20 ms)
-//    }
+    }
 
     return (bool)pctrl.sleep;
 }
@@ -143,8 +140,8 @@ char *uks=NULL, *uke=NULL;
 		//else
 		//if (!strcmp(cmds, "AT+SYNL=")) sprintf(cmds+strlen(cmds),"4");//set sync word len // 0..8
 		//else
-//		if (!strcmp(cmds, "AT+POWER=")) sprintf(cmds+strlen(cmds),"3");//set POWER to 20dbm //0—20dbm//1—17dbm//2—15dbm//3—10dbm//4-???//5—8dbm//6—5dbm//7—2dbm
-//		else
+		if (!strcmp(cmds, "AT+POWER=")) sprintf(cmds+strlen(cmds),"2");//set POWER to 20dbm //0—20dbm//1—17dbm//2—15dbm//3—10dbm//4-???//5—8dbm//6—5dbm//7—2dbm
+		else
 //		if (!strcmp(cmds, "AT+CS=")) sprintf(cmds+strlen(cmds),"B");//set Channel Select to 10 //0..F — 0..15 channel
 //		else
 		if (strchr(cmds,'=')) sprintf(cmds+strlen(cmds),"?");
@@ -180,9 +177,9 @@ char *uks=NULL, *uke=NULL;
 	    } else {//data transfer mode
 		if (!needs) {
 		    get_tsensor(&tchip);
-		    if (ts_set) {
+		    if (ts_set) {// time already set, send message without request timestamp and timezone
 			dl = sprintf(cmds,"DevID %08X (%u): %.1fv %ddeg.C\r\n", cli_id, ++pknum_tx, (double)tchip.vcc/1000, (int)round(tchip.cels));
-		    } else {
+		    } else {// send message with request timestamp and timezone
 			dl = sprintf(cmds,"DevID %08X (%u) TS: %.1fv %ddeg.C\r\n", cli_id, ++pknum_tx, (double)tchip.vcc/1000, (int)round(tchip.cels));
 		    }
 		    if (!lora_sleep_mode(false)) {}// !!! wakeup !!!

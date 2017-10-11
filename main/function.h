@@ -73,7 +73,7 @@
 #define STOP_COLOR  WHITE_COLOR
 
 #define ADC1_TEST_CHANNEL (6) //6 channel connect to pin34
-#define ADC1_TEST_PIN    34 //pin34
+#define ADC1_TEST_PIN    34 //pin34 connect to vcc(3.3v)
 
 #define get_tmr(tm) (xTaskGetTickCount() + tm)
 #define check_tmr(tm) (xTaskGetTickCount() >= tm ? true : false)
