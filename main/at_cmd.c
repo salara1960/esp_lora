@@ -1,13 +1,39 @@
 
 #include "function.h"
 
-#define wait_ack_def 3000
 
+#define wait_ack_def 3000
+#define max_at_len 16
 
 typedef struct {
     char *cmd;
     TickType_t wait;
 } s_at_cmd;
+
+typedef struct {
+    uint8_t power;//0—20dbm,  1—17dbm, 2—15dbm, 3—10dbm, 4-?, 5—8dbm, 6—5dbm, 7—2dbm
+    uint8_t chan;//0..F — 0..15 channel
+    char syncw[16];// 0xXX........
+    uint8_t syncl;// 0..8
+    uint8_t crc;// 0..1
+    uint8_t bandw;// 6—62.5KHZ, 7—125KHZ, 8—250KHZ, 9—500KHZ
+    uint8_t sf;// 7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
+    uint8_t crcode;// 0—CR4/5, 1—CR4/6, 2—CR4/7, 3—CR4/8
+    uint8_t hfss;// 0..1
+    uint8_t plen;// 1..127
+    uint8_t hpv;// 0..255
+    uint16_t fsv;// 0..65535
+    uint8_t mode;// 0-LoRa, 1-OOK, 2-FSK, 3-GFSK
+    uint8_t freq;// 0--434MHZ Band, 1--470MHZ Band, 2--868MHZ Band, 3--915MHZ Band
+} s_lora_stat;
+
+s_lora_stat lora_stat;
+
+const char *lora_power[] = {"20dbm","17dbm","15dbm","10dbm","??dbm","8dbm","5dbm","2dbm"};//0..7
+const char *lora_crcode[] = {"CR4/5","CR4/6","CR4/7","CR4/8"};//0..3
+const char *lora_bandw[] = {"62.5KHZ","125KHZ","250KHZ","500KHZ"};//0..3
+const char *lora_main_mode[] = {"LoRa","OOK","FSK","GFSK"};//0..3
+const char *lora_freq[] = {"434MHZ","470MHZ","868MHZ","915MHZ"};//0..3
 
 s_at_cmd at_cmd[] = {
     {//0
@@ -22,7 +48,7 @@ s_at_cmd at_cmd[] = {
         .cmd = "AT+SPC=",
         .wait = wait_ack_def,
     },
-    {//3//set POWER to 20dbm //0—20dbm 5—8dbm, 1—17dbm 6—5dbm, 2—15dbm 7—2dbm, 3—10dbm
+    {//3//set POWER to 20dbm //0—20dbm,  1—17dbm, 2—15dbm, 3—10dbm, 5—8dbm, 6—5dbm, 7—2dbm
         .cmd = "AT+POWER=",
         .wait = wait_ack_def,
     },
@@ -93,13 +119,193 @@ s_at_cmd at_cmd[] = {
     {//20//save profile to dataflash
         .cmd = "AT&V",
         .wait = 5000,
-    }//,
-//    {//21//save profile to dataflash
-//        .cmd = "AT&W",
-//        .wait = wait_ack_def,
-//    }
+    },
+    {//21//save profile to dataflash
+        .cmd = "AT&W",
+        .wait = wait_ack_def,
+    }
 };
-#define TotalCmd  (sizeof(at_cmd) / sizeof(s_at_cmd))
+#define TotalCmd  ((sizeof(at_cmd) / sizeof(s_at_cmd)) - 1)
+
+
+void put_at_value(uint8_t ind, char *uack)
+{
+    if ( (ind > TotalCmd) || (!uack) ) return;
+
+    char cd[max_at_len]={0};
+    memcpy(cd, &at_cmd[ind].cmd[2], strlen(at_cmd[ind].cmd)-2);
+    int dl = strlen(cd); if (!dl) return;
+
+    uint8_t bt;
+    bool fl;
+    int val;
+    char *uk=NULL;
+    uk = strchr(cd, '='); if (uk) *uk = ':';
+
+    switch (ind) {
+	case 3://AT+POWER
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		val = atoi(uk+dl);
+		if ((val>=0) && (val<=7)) lora_stat.power = val;
+//printf("cmd=%u '%s' power=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.power, lora_power[lora_stat.power]);
+	    }
+	break;
+	case 4://AT+CS
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		fl = false;
+		bt = *uk;
+		if ( (bt>=0x30) && (bt<=0x39) ) {
+		    bt -= 0x30; fl = true;
+		} else if ( (bt>=0x41) && (bt<=0x46) ) {
+		    bt -= 0x37; fl = true;
+		}
+		if (fl) {
+		    lora_stat.chan = bt;
+//printf("cmd=%u '%s' chan=%u\n", ind, at_cmd[ind].cmd, lora_stat.chan);
+		}
+	    }
+	break;
+	case 5://AT+SYNW=1234ABEF\r\n (if sync word is 0x12,0x34,0xAB,0xEF)
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		memset(lora_stat.syncw, 0, 16);
+		char *uke = strstr(uk,"\r\n"); if (!uke) uke = strchr(uk,'\0');
+		if (uke) {
+		    val = uke - uk; if (val > 16) val = 16;
+		    memset(&lora_stat.syncw[0], 0, 16);
+		    memcpy(&lora_stat.syncw[0], uk, val);
+//printf("cmd=%u '%s' syncw=%.*s\n", ind, at_cmd[ind].cmd, 16, lora_stat.syncw);
+		}
+	    }
+	break;
+	case 6://AT+SYNL=//6//set sync word len // 0..8
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		bt = *uk;
+		if ( (bt>=0x30) && (bt<=0x38) ) {
+		    lora_stat.syncl = bt - 0x30;
+//printf("cmd=%u '%s' syncl=%u\n", ind, at_cmd[ind].cmd, lora_stat.syncl);
+		}
+	    }
+	break;
+	case 10://AT+LRCRC= //0‐disabe CRC function, 1‐enable CRC function
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		bt = *uk;
+		if ( (bt>=0x30) && (bt<=0x31) ) {
+		    lora_stat.crc = bt - 0x30;
+//printf("cmd=%u '%s' crc=%u\n", ind, at_cmd[ind].cmd, lora_stat.crc);
+		}
+	    }
+	break;
+	case 11://AT+LRSBW= //6—62.5KHZ, 7—125KHZ, 8—250KHZ, 9—500KHZ
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		bt = *uk;
+		if ( (bt>=0x36) && (bt<=0x39) ) {
+		    lora_stat.bandw = bt - 0x30;
+//printf("cmd=%u '%s' bandw=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.bandw, lora_bandw[lora_stat.bandw - 6]);
+		}
+	    }
+	break;
+	case 12://AT+LRSF= //uint8_t sf;// 7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		bt = *uk;
+		fl = false;
+		if ( (bt>=0x37) && (bt<=0x39) ) {
+		    bt -= 0x30; fl = true;
+		} else if ( (bt>=0x41) && (bt<=0x43) ) {
+		    bt -= 0x37; fl = true;
+		}
+		if (fl) {
+		    lora_stat.sf = bt;
+//printf("cmd=%u '%s' sf=%u\n", ind, at_cmd[ind].cmd, lora_stat.sf);
+		}
+	    }
+	break;
+	case 13://AT+LRCR= //0—CR4/5, 1—CR4/6, 2—CR4/7, 3—CR4/8
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		bt = *uk;
+		if ( (bt>=0x30) && (bt<=0x33) ) {
+		    lora_stat.crcode = bt - 0x30;
+//printf("cmd=%u '%s' crcode=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.crcode, lora_crcode[lora_stat.crcode]);
+		}
+	    }
+	break;
+	case 14://AT+LRHF= //0‐disable HFSS function, 1‐enable HFSS function
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		bt = *uk;
+		if ( (bt>=0x30) && (bt<=0x31) ) {
+		    lora_stat.hfss = bt - 0x30;
+//printf("cmd=%u '%s' hfss=%u\n", ind, at_cmd[ind].cmd, lora_stat.hfss);
+		}
+	    }
+	break;
+	case 15://AT+LRPL= //this command to set the length of data packet.//1..127 (>16)
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		val = atoi(uk);
+		lora_stat.plen = val;
+//printf("cmd=%u '%s' plen=%u\n", ind, at_cmd[ind].cmd, lora_stat.plen);
+	    }
+	break;
+	case 16://AT+LRHPV= //In LoRa mode, the hopping period value can be set. //0..255 (>5)
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		val = atoi(uk);
+		lora_stat.hpv = val;
+//printf("cmd=%u '%s' hpv=%u\n", ind, at_cmd[ind].cmd, lora_stat.hpv);
+	    }
+        break;
+        case 17://AT+LRFSV= //Frequency Step Value can be set.//0..65535
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		val = atoi(uk);
+		lora_stat.fsv = val;
+//printf("cmd=%u '%s' fsv=%u\n", ind, at_cmd[ind].cmd, lora_stat.fsv);
+	    }
+        break;
+        case 18://AT+MODE= //0-LoRa, 1-OOK, 2-FSK, 3-GFSK, In the OOK mode，baudrate no more than 9600 bps
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		bt = *uk;
+		if ( (bt>=0x30) && (bt<=0x33) ) {
+		    lora_stat.mode = bt - 0x30;
+//printf("cmd=%u '%s' mode=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.mode, lora_main_mode[lora_stat.mode]);
+		}
+	    }
+        break;
+        case 19://AT+BAND= //0--434MHZ Band, 1--470MHZ Band, 2--868MHZ Band, 3--915MHZ Band
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		bt = *uk;
+		if ( (bt>=0x30) && (bt<=0x33) ) {
+		    lora_stat.freq = bt - 0x30;
+//printf("cmd=%u '%s' freq=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.freq, lora_freq[lora_stat.freq]);
+		}
+	    }
+        break;
+    }
+
+}
 
 /*
 HM‐TRLR‐S‐868 Module default setting

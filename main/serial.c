@@ -103,7 +103,7 @@ char stx[256]={0};
 char *uks=NULL, *uke=NULL;
 
 
-    sprintf(stx, "Start serial_task (%d) | FreeMem %u\n", TotalCmd, xPortGetFreeHeapSize()); printik(TAG_UART, stx, CYAN_COLOR);
+    sprintf(stx, "Start serial_task | FreeMem %u\n", xPortGetFreeHeapSize()); printik(TAG_UART, stx, CYAN_COLOR);
 
     char *data = (char *)calloc(1, BSIZE + 1);
     if (data) {
@@ -121,6 +121,7 @@ char *uks=NULL, *uke=NULL;
 	TickType_t tms=0, tmneeds=0;
 	t_sens_t tchip;
 	s_evt evt;
+	memset(&lora_stat, 0, sizeof(s_lora_stat));
 
 	while (true) {
 
@@ -128,7 +129,6 @@ char *uks=NULL, *uke=NULL;
 
 		memset(cmds, 0, BSIZE);
 		sprintf(cmds, "%s", at_cmd[allcmd].cmd);
-
 		//if (!strcmp(cmds, "AT+LRSF=")) sprintf(cmds+strlen(cmds),"C");//7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
 		//else 
 		//if (!strcmp(cmds, "AT+LRSBW=")) sprintf(cmds+strlen(cmds),"7");//6-62.5, 7-125, 8-250, 9-500
@@ -140,12 +140,11 @@ char *uks=NULL, *uke=NULL;
 		//else
 		//if (!strcmp(cmds, "AT+SYNL=")) sprintf(cmds+strlen(cmds),"4");//set sync word len // 0..8
 		//else
-		if (!strcmp(cmds, "AT+POWER=")) sprintf(cmds+strlen(cmds),"2");//set POWER to 20dbm //0—20dbm//1—17dbm//2—15dbm//3—10dbm//4-???//5—8dbm//6—5dbm//7—2dbm
-		else
-//		if (!strcmp(cmds, "AT+CS=")) sprintf(cmds+strlen(cmds),"B");//set Channel Select to 10 //0..F — 0..15 channel
-//		else
+		//if (!strcmp(cmds, "AT+POWER=")) sprintf(cmds+strlen(cmds),"2");//set POWER to 20dbm //0—20dbm//1—17dbm//2—15dbm//3—10dbm//4-???//5—8dbm//6—5dbm//7—2dbm
+		//else
+		//if (!strcmp(cmds, "AT+CS=")) sprintf(cmds+strlen(cmds),"B");//set Channel Select to 10 //0..F — 0..15 channel
+		//else
 		if (strchr(cmds,'=')) sprintf(cmds+strlen(cmds),"?");
-
 		sprintf(cmds+strlen(cmds),"\r\n");
 		dl = strlen(cmds);
 		ets_printf("%s%s%s", BROWN_COLOR, cmds, STOP_COLOR);
@@ -158,7 +157,10 @@ char *uks=NULL, *uke=NULL;
 			data[len++] = buf;
 			if ( (strstr(data, "\r\n")) || (len >= BSIZE - 2) ) {
 			    if (strstr(data, "ERROR:")) ets_printf("%s%s%s", RED_COLOR, data, STOP_COLOR);
-						   else ets_printf("%s", data);
+						   else {
+							ets_printf("%s", data);
+							if (data[0] == '+') put_at_value(allcmd, data);
+						    }
 			    rd_done = 1;
 			}
 		    }
@@ -168,6 +170,18 @@ char *uks=NULL, *uke=NULL;
 	    }//while (allcmd < TotalCmd)
 
 	    if (!mode) {//at_command mode
+		if (lora_stat.plen) {
+		    ets_printf("\n%s[%s] Freq=%s Mode=%s Power=%s Channel=%u BandW=%s SF=%u PackLen=%u%s\n",
+				GREEN_COLOR, TAG_UART,
+				lora_freq[lora_stat.freq],
+				lora_main_mode[lora_stat.mode],
+				lora_power[lora_stat.power],
+				lora_stat.chan,
+				lora_bandw[lora_stat.bandw - 6],
+				lora_stat.sf,
+				lora_stat.plen,
+				STOP_COLOR);
+		}
 		mode = true;
 		lora_data_mode(mode);//set data mode
 		vTaskDelay(15 / portTICK_RATE_MS);
