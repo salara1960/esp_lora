@@ -60,7 +60,7 @@ extern void ssd1306_shift(bool left, uint8_t line);
 extern void ssd1306_scroll(bool flag);
 extern void ssd1306_text_xy(char *stroka, uint8_t cx, uint8_t cy);
 extern void ssd1306_text(char *stroka);
-
+extern uint8_t calcx(int len);
 
 #endif
 

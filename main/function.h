@@ -103,8 +103,6 @@ extern uint32_t cli_id;
 
 extern void get_tsensor(t_sens_t *t_s);
 
-extern uint8_t calcx(int len);
-
 extern void printik(const char *tag, const char *buf, const char *color);
 
 #include "ssd1306.h"

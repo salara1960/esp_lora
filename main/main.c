@@ -3,7 +3,7 @@
 
 #define WAKEUP_PIN 4
 #define WAKEUP_PIN_LEVEL 1
-#define WAKEUP_TIME (300)
+#define WAKEUP_TIME (120)
 
 //******************************************************************************************************************
 
@@ -60,14 +60,14 @@ void app_main()
     vTaskDelay(1000 / portTICK_RATE_MS);
 
     t_sens_t tc;
-    char stk[128]={0};
+    char stk[128] = {0};
     struct tm *dtimka;
     time_t dit_ct;
-    uint8_t col = 0, row = 0, blk = 0, cnt = 0xff, don=true;
-    uint32_t kol=0;
+    uint8_t col = 0, row = 0, blk = 0, cnt = 0xff, don = true;
+    uint32_t kol = 0;
     TickType_t adc_tw = 0, wst = 0;
-    const uint8_t sub_val = 5;
-    const TickType_t sub_tmr = 100;
+    const uint8_t sub_val = 8;
+    TickType_t sub_tmr = 80;
 
     vTaskDelay(1000 / portTICK_RATE_MS);
     ssd1306_contrast(cnt);
@@ -125,13 +125,14 @@ void app_main()
 		    ssd1306_on(false); //display off
 		    don = false;
 		}
+		sub_tmr += 2;
 		wst = get_tmr(sub_tmr);
 	    }
 	}
 
 	if (!don) {
-	    while (lora_start) vTaskDelay(100 / portTICK_RATE_MS);
-	    memset(stk,0,128); sprintf(stk,"Goto light-sleep mode (%u sec)\n\n", WAKEUP_TIME); printik(TAGM, stk, GREEN_COLOR);
+	    while (lora_start) vTaskDelay(50 / portTICK_RATE_MS);
+	    memset(stk,0,128); sprintf(stk,"Goto light-sleep mode (%u sec)\n\n", WAKEUP_TIME); printik(TAGM, stk, WHITE_COLOR);
 	    esp_light_sleep_start();//goto sleep mode
 
 	    // !!!----------- Wakeup ------------!!!

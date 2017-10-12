@@ -127,6 +127,8 @@ char *uks=NULL, *uke=NULL;
 
 	    while (allcmd < TotalCmd) {//at command loop
 
+		if (!allcmd) ets_printf("%s[%s] Wait init lora module...%s\n", GREEN_COLOR, TAG_UART, STOP_COLOR);
+
 		memset(cmds, 0, BSIZE);
 		sprintf(cmds, "%s", at_cmd[allcmd].cmd);
 		//if (!strcmp(cmds, "AT+LRSF=")) sprintf(cmds+strlen(cmds),"C");//7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
@@ -156,37 +158,36 @@ char *uks=NULL, *uke=NULL;
 		    if (uart_read_bytes(unum, &buf, 1, (TickType_t)25) == 1) {
 			data[len++] = buf;
 			if ( (strstr(data, "\r\n")) || (len >= BSIZE - 2) ) {
-			    if (strstr(data, "ERROR:")) ets_printf("%s%s%s", RED_COLOR, data, STOP_COLOR);
-						   else {
-							ets_printf("%s", data);
-							if (data[0] == '+') put_at_value(allcmd, data);
-						    }
+			    if (strstr(data, "ERROR:")) {
+				ets_printf("%s%s%s", RED_COLOR, data, STOP_COLOR);
+			    } else {
+				ets_printf("%s", data);
+				if (data[0] == '+') put_at_value(allcmd, data);
+			    }
 			    rd_done = 1;
 			}
 		    }
 		}
 		allcmd++;
-		vTaskDelay(200 / portTICK_RATE_MS);
+		vTaskDelay(10 / portTICK_RATE_MS);//50//200
 	    }//while (allcmd < TotalCmd)
 
 	    if (!mode) {//at_command mode
-		if (lora_stat.plen) {
-		    ets_printf("\n%s[%s] Freq=%s Mode=%s Power=%s Channel=%u BandW=%s SF=%u PackLen=%u%s\n",
-				GREEN_COLOR, TAG_UART,
-				lora_freq[lora_stat.freq],
-				lora_main_mode[lora_stat.mode],
-				lora_power[lora_stat.power],
-				lora_stat.chan,
-				lora_bandw[lora_stat.bandw - 6],
-				lora_stat.sf,
-				lora_stat.plen,
-				STOP_COLOR);
-		}
+		if (lora_stat.plen) ets_printf("%s[%s] Freq=%s Mode=%s Power=%s Channel=%u BandW=%s SF=%u PackLen=%u%s\n",
+						GREEN_COLOR, TAG_UART,
+						lora_freq[lora_stat.freq],
+						lora_main_mode[lora_stat.mode],
+						lora_power[lora_stat.power],
+						lora_stat.chan,
+						lora_bandw[lora_stat.bandw - 6],
+						lora_stat.sf,
+						lora_stat.plen,
+						STOP_COLOR);
 		mode = true;
 		lora_data_mode(mode);//set data mode
 		vTaskDelay(15 / portTICK_RATE_MS);
 		len = 0; memset(data, 0, BSIZE);
-		ets_printf("\n%s[%s] Device %X switch from at_command to data tx/rx mode and goto sleep%s\n", MAGENTA_COLOR, TAG_UART, cli_id, STOP_COLOR);
+		ets_printf("%s[%s] Device %X switch from at_command to data tx/rx mode and goto sleep%s\n", MAGENTA_COLOR, TAG_UART, cli_id, STOP_COLOR);
 		needs = false;
 	    } else {//data transfer mode
 		if (!needs) {

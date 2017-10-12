@@ -13,15 +13,6 @@ inline void get_tsensor(t_sens_t *t_s)
     t_s->cels = (t_s->faren - 32) * 5/9;
 }
 //--------------------------------------------------------------------
-uint8_t calcx(int len)
-{
-uint8_t ret = 0;
-
-    if ( (len > 0) && (len < 16) ) ret = ((16 - len) >> 1) + 1;
-
-    return ret;
-}
-//--------------------------------------------------------------------
 
 void printik(const char *tag, const char *buf, const char *color)
 {
