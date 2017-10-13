@@ -1,9 +1,11 @@
 
 #include "function.h"
 
+#undef PRN_DUMP
 
 #define wait_ack_def 3000
 #define max_at_len 16
+
 
 typedef struct {
     char *cmd;
@@ -148,7 +150,9 @@ void put_at_value(uint8_t ind, char *uack)
 	    if (uk) {
 		val = atoi(uk+dl);
 		if ((val>=0) && (val<=7)) lora_stat.power = val;
-//printf("cmd=%u '%s' power=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.power, lora_power[lora_stat.power]);
+#ifdef PRN_DUMP
+		printf("cmd=%u '%s' power=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.power, lora_power[lora_stat.power]);
+#endif
 	    }
 	break;
 	case 4://AT+CS
@@ -164,7 +168,9 @@ void put_at_value(uint8_t ind, char *uack)
 		}
 		if (fl) {
 		    lora_stat.chan = bt;
-//printf("cmd=%u '%s' chan=%u\n", ind, at_cmd[ind].cmd, lora_stat.chan);
+#ifdef PRN_DUMP
+		    printf("cmd=%u '%s' chan=%u\n", ind, at_cmd[ind].cmd, lora_stat.chan);
+#endif
 		}
 	    }
 	break;
@@ -178,7 +184,9 @@ void put_at_value(uint8_t ind, char *uack)
 		    val = uke - uk; if (val > 16) val = 16;
 		    memset(&lora_stat.syncw[0], 0, 16);
 		    memcpy(&lora_stat.syncw[0], uk, val);
-//printf("cmd=%u '%s' syncw=%.*s\n", ind, at_cmd[ind].cmd, 16, lora_stat.syncw);
+#ifdef PRN_DUMP
+		    printf("cmd=%u '%s' syncw=%.*s\n", ind, at_cmd[ind].cmd, 16, lora_stat.syncw);
+#endif
 		}
 	    }
 	break;
@@ -189,7 +197,9 @@ void put_at_value(uint8_t ind, char *uack)
 		bt = *uk;
 		if ( (bt>=0x30) && (bt<=0x38) ) {
 		    lora_stat.syncl = bt - 0x30;
-//printf("cmd=%u '%s' syncl=%u\n", ind, at_cmd[ind].cmd, lora_stat.syncl);
+#ifdef PRN_DUMP
+		    printf("cmd=%u '%s' syncl=%u\n", ind, at_cmd[ind].cmd, lora_stat.syncl);
+#endif
 		}
 	    }
 	break;
@@ -200,7 +210,9 @@ void put_at_value(uint8_t ind, char *uack)
 		bt = *uk;
 		if ( (bt>=0x30) && (bt<=0x31) ) {
 		    lora_stat.crc = bt - 0x30;
-//printf("cmd=%u '%s' crc=%u\n", ind, at_cmd[ind].cmd, lora_stat.crc);
+#ifdef PRN_DUMP
+		    printf("cmd=%u '%s' crc=%u\n", ind, at_cmd[ind].cmd, lora_stat.crc);
+#endif
 		}
 	    }
 	break;
@@ -211,7 +223,9 @@ void put_at_value(uint8_t ind, char *uack)
 		bt = *uk;
 		if ( (bt>=0x36) && (bt<=0x39) ) {
 		    lora_stat.bandw = bt - 0x30;
-//printf("cmd=%u '%s' bandw=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.bandw, lora_bandw[lora_stat.bandw - 6]);
+#ifdef PRN_DUMP
+		    printf("cmd=%u '%s' bandw=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.bandw, lora_bandw[lora_stat.bandw - 6]);
+#endif
 		}
 	    }
 	break;
@@ -228,7 +242,9 @@ void put_at_value(uint8_t ind, char *uack)
 		}
 		if (fl) {
 		    lora_stat.sf = bt;
-//printf("cmd=%u '%s' sf=%u\n", ind, at_cmd[ind].cmd, lora_stat.sf);
+#ifdef PRN_DUMP
+		    printf("cmd=%u '%s' sf=%u\n", ind, at_cmd[ind].cmd, lora_stat.sf);
+#endif
 		}
 	    }
 	break;
@@ -239,7 +255,9 @@ void put_at_value(uint8_t ind, char *uack)
 		bt = *uk;
 		if ( (bt>=0x30) && (bt<=0x33) ) {
 		    lora_stat.crcode = bt - 0x30;
-//printf("cmd=%u '%s' crcode=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.crcode, lora_crcode[lora_stat.crcode]);
+#ifdef PRN_DUMP
+		    printf("cmd=%u '%s' crcode=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.crcode, lora_crcode[lora_stat.crcode]);
+#endif
 		}
 	    }
 	break;
@@ -250,7 +268,9 @@ void put_at_value(uint8_t ind, char *uack)
 		bt = *uk;
 		if ( (bt>=0x30) && (bt<=0x31) ) {
 		    lora_stat.hfss = bt - 0x30;
-//printf("cmd=%u '%s' hfss=%u\n", ind, at_cmd[ind].cmd, lora_stat.hfss);
+#ifdef PRN_DUMP
+		    printf("cmd=%u '%s' hfss=%u\n", ind, at_cmd[ind].cmd, lora_stat.hfss);
+#endif
 		}
 	    }
 	break;
@@ -260,7 +280,9 @@ void put_at_value(uint8_t ind, char *uack)
 		uk += dl;
 		val = atoi(uk);
 		lora_stat.plen = val;
-//printf("cmd=%u '%s' plen=%u\n", ind, at_cmd[ind].cmd, lora_stat.plen);
+#ifdef PRN_DUMP
+		printf("cmd=%u '%s' plen=%u\n", ind, at_cmd[ind].cmd, lora_stat.plen);
+#endif
 	    }
 	break;
 	case 16://AT+LRHPV= //In LoRa mode, the hopping period value can be set. //0..255 (>5)
@@ -269,7 +291,9 @@ void put_at_value(uint8_t ind, char *uack)
 		uk += dl;
 		val = atoi(uk);
 		lora_stat.hpv = val;
-//printf("cmd=%u '%s' hpv=%u\n", ind, at_cmd[ind].cmd, lora_stat.hpv);
+#ifdef PRN_DUMP
+		printf("cmd=%u '%s' hpv=%u\n", ind, at_cmd[ind].cmd, lora_stat.hpv);
+#endif
 	    }
         break;
         case 17://AT+LRFSV= //Frequency Step Value can be set.//0..65535
@@ -278,7 +302,9 @@ void put_at_value(uint8_t ind, char *uack)
 		uk += dl;
 		val = atoi(uk);
 		lora_stat.fsv = val;
-//printf("cmd=%u '%s' fsv=%u\n", ind, at_cmd[ind].cmd, lora_stat.fsv);
+#ifdef PRN_DUMP
+		printf("cmd=%u '%s' fsv=%u\n", ind, at_cmd[ind].cmd, lora_stat.fsv);
+#endif
 	    }
         break;
         case 18://AT+MODE= //0-LoRa, 1-OOK, 2-FSK, 3-GFSK, In the OOK mode，baudrate no more than 9600 bps
@@ -288,7 +314,9 @@ void put_at_value(uint8_t ind, char *uack)
 		bt = *uk;
 		if ( (bt>=0x30) && (bt<=0x33) ) {
 		    lora_stat.mode = bt - 0x30;
-//printf("cmd=%u '%s' mode=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.mode, lora_main_mode[lora_stat.mode]);
+#ifdef PRN_DUMP
+		    printf("cmd=%u '%s' mode=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.mode, lora_main_mode[lora_stat.mode]);
+#endif
 		}
 	    }
         break;
@@ -299,7 +327,9 @@ void put_at_value(uint8_t ind, char *uack)
 		bt = *uk;
 		if ( (bt>=0x30) && (bt<=0x33) ) {
 		    lora_stat.freq = bt - 0x30;
-//printf("cmd=%u '%s' freq=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.freq, lora_freq[lora_stat.freq]);
+#ifdef PRN_DUMP
+		    printf("cmd=%u '%s' freq=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.freq, lora_freq[lora_stat.freq]);
+#endif
 		}
 	    }
         break;
