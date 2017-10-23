@@ -29,11 +29,13 @@ void app_main()
     adc1_config_channel_atten(ADC1_TEST_CHANNEL, ADC_ATTEN_11db);
 
     //****************    SET WAKEUP PARAM    **************************
+#ifdef WITH_FULL_SLEEP
     gpio_num_t w_pin = WAKEUP_PIN;
     int w_level = WAKEUP_PIN_LEVEL;
     esp_sleep_enable_ext0_wakeup(w_pin, w_level);
     uint64_t time_in_us = WAKEUP_TIME * 1000000;
     esp_sleep_enable_timer_wakeup(time_in_us);
+#endif
     //**************************************************************
 
 
@@ -63,11 +65,15 @@ void app_main()
     char stk[128] = {0};
     struct tm *dtimka;
     time_t dit_ct;
-    uint8_t col = 0, row = 0, blk = 0, cnt = 0xff, don = true;
-    uint32_t kol = 0;
-    TickType_t adc_tw = 0, wst = 0;
+    uint8_t col = 0, row = 0, cnt = 0xff, don = true;
+    TickType_t adc_tw = 0;
+#ifdef WITH_FULL_SLEEP
     const uint8_t sub_val = 10;
+    TickType_t wst = 0;
+    uint32_t kol = 0;
+    uint8_t blk = 0;
     TickType_t sub_tmr = 125;
+#endif
 
     vTaskDelay(1000 / portTICK_RATE_MS);
     ssd1306_contrast(cnt);
@@ -106,14 +112,19 @@ void app_main()
 	    col = calcx(strlen(stk));
 	    ssd1306_text_xy(stk, col, row);
 
+#ifdef WITH_FULL_SLEEP
 	    if (!blk) {// for start contrast play
-		blk = 1; kol = 0; wst = get_tmr(sub_tmr);
+		blk = 1; kol = 0;
+		wst = get_tmr(sub_tmr);
 		memset(stk,0,128);
 		col = calcx(sprintf(stk,"Goto sleep..."));
 		ssd1306_text_xy(stk, col, 5);
 	    }
+#endif
 	}
 
+
+#ifdef WITH_FULL_SLEEP
 	if (blk) {//contrast play
 	    if (check_tmr(wst)) {
 		kol++;
@@ -144,6 +155,7 @@ void app_main()
 		}
 	    }
 	}
+#endif
 
     }
 

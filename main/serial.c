@@ -6,6 +6,9 @@ const int unum = UART_NUMBER;
 const int uspeed = UART_SPEED;
 const int BSIZE = 128;
 const uint32_t wait_ack = 2000;
+#ifndef WITH_FULL_SLEEP
+    const uint32_t sleep_time = 120000;
+#endif
 s_pctrl pctrl = {0, 0, 1, 1, 0};
 bool lora_start = false, ts_set = false;
 static uint8_t allcmd=0;
@@ -220,7 +223,9 @@ char *uks=NULL, *uke=NULL;
 		    } else {// send message with request timestamp and timezone
 			dl = sprintf(cmds,"DevID %08X (%u) TS: %.1fv %ddeg.C\r\n", cli_id, ++pknum_tx, (double)tchip.vcc/1000, (int)round(tchip.cels));
 		    }
+#ifdef WITH_FULL_SLEEP
 		    if (!lora_sleep_mode(false)) {}// !!! wakeup !!!
+#endif
 			//printik(TAG_UART, "Module wakeup and goto normal mode", MAGENTA_COLOR);
 
 		    uart_write_bytes(unum, cmds, dl);
@@ -265,16 +270,22 @@ char *uks=NULL, *uke=NULL;
 		    if (xQueueSend(evtq, (void *)&evt, (TickType_t)0) != pdPASS) {
 		        ESP_LOGE(TAG_UART,"Error while sending to evtq");
 		    }
+#ifdef WITH_FULL_SLEEP
 		    if (needs) tmneeds = get_tmr(0);
+#else
+		    if (needs) tmneeds = get_tmr(sleep_time);
+#endif
 		}
 	    }
 
 	    if (needs) {
 		if (check_tmr(tmneeds)) {
+#ifdef WITH_FULL_SLEEP
 		    if (lora_sleep_mode(true)) {
-			//memset(stx,0,256); sprintf(stx,"Goto sleep mode until %u sec\n", sleep_time/1000); printik(TAG_UART, stx, MAGENTA_COLOR);
 			break;
+//			memset(stx,0,256); sprintf(stx,"Goto lora_sleep mode until %u sec\n", sleep_time/1000); printik(TAG_UART, stx, MAGENTA_COLOR);
 		    }
+#endif
 		    needs = false;
 		}
 	    }

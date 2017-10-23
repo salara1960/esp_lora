@@ -39,9 +39,6 @@
 #include "esp_sleep.h"
 #include "esp_types.h"
 
-//#include "stdatomic.h"
-
-//#include "tcpip_adapter.h"
 
 #include "rom/ets_sys.h"
 #include "soc/soc.h"
@@ -51,14 +48,10 @@
 #include <soc/dport_reg.h>
 #include <soc/gpio_sig_map.h>
 
-//#include "lwip/ip_addr.h"
-//#include "lwip/err.h"
-//#include "lwip/sockets.h"
-//#include "lwip/sys.h"
-//#include "lwip/netdb.h"
-//#include "lwip/dns.h"
-//#include "lwip/api.h"
-//#include "lwip/netif.h"
+
+
+#define WITH_FULL_SLEEP
+
 
 
 #define BLACK_COLOR  "\x1B[30m"
