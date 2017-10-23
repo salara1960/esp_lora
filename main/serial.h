@@ -5,6 +5,8 @@
     #include "driver/uart.h"
     #include "soc/uart_struct.h"
 
+    #define PRINT_AT
+
     #define U2_CONFIG 21 //pin21 - out, pull down
     #define U2_SLEEP 22 //pin22 - out, pull down
     #define U2_RESET 2 //pin2 - out, pull up

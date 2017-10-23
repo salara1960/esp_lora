@@ -3,7 +3,7 @@
 
 #define WAKEUP_PIN 4
 #define WAKEUP_PIN_LEVEL 1
-#define WAKEUP_TIME (300)
+#define WAKEUP_TIME (120)
 
 //******************************************************************************************************************
 

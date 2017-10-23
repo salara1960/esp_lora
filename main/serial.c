@@ -131,8 +131,12 @@ char *uks=NULL, *uke=NULL;
 
 		memset(cmds, 0, BSIZE);
 		sprintf(cmds, "%s", at_cmd[allcmd].cmd);
-		//if (!strcmp(cmds, "AT+LRSF=")) sprintf(cmds+strlen(cmds),"C");//7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
-		//else 
+
+//		if (!strcmp(cmds, "AT+LRSF=")) {
+//		    sprintf(cmds+strlen(cmds),"C");//7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
+//		    lora_stat.sf = 12;
+//		}
+//		else
 		//if (!strcmp(cmds, "AT+LRSBW=")) sprintf(cmds+strlen(cmds),"7");//6-62.5, 7-125, 8-250, 9-500
 		//else
 		//if (!strcmp(cmds, "AT+NODE=")) sprintf(cmds+strlen(cmds),"0,0");//AT+NODE=n,m -> n: 0—disable, 1—enable; mode: 0—only match NID, 1-match NID and BID
@@ -144,13 +148,29 @@ char *uks=NULL, *uke=NULL;
 		//else
 		//if (!strcmp(cmds, "AT+POWER=")) sprintf(cmds+strlen(cmds),"2");//set POWER to 20dbm //0—20dbm//1—17dbm//2—15dbm//3—10dbm//4-???//5—8dbm//6—5dbm//7—2dbm
 		//else
-		//if (!strcmp(cmds, "AT+CS=")) sprintf(cmds+strlen(cmds),"B");//set Channel Select to 10 //0..F — 0..15 channel
-		//else
+		//if (!strcmp(cmds, "AT+POWER=")) {
+		//    sprintf(cmds+strlen(cmds),"0");//2//set POWER to //0—20dbm 5—8dbm, 1—17dbm 6—5dbm, 2—15dbm 7—2dbm, 3—10dbm
+		//    lora_stat.power = 0;
+		//} else
+//		if (!strcmp(cmds, "AT+LRHF=")) {
+//		    sprintf(cmds+strlen(cmds),"1");//0,1
+//		    lora_stat.hfss = 1;
+//		} else if (!strcmp(cmds, "AT+LRHPV=")) sprintf(cmds+strlen(cmds),"10");//0..255
+//		else if (!strcmp(cmds, "AT+LRFSV=")) sprintf(cmds+strlen(cmds),"819");//0..65535  //819 - 50KHz (1638 - 100KHz)
+//		else 
+//		if (!strcmp(cmds, "AT+CS=")) {
+//		    sprintf(cmds+strlen(cmds),"A");//B//set Channel Select to 10 //0..F — 0..15 channel
+//		    lora_stat.chan = 10;
+//		}
+//		else
 		if (strchr(cmds,'=')) sprintf(cmds+strlen(cmds),"?");
+
+
 		sprintf(cmds+strlen(cmds),"\r\n");
 		dl = strlen(cmds);
+#ifdef PRINT_AT
 		ets_printf("%s%s%s", BROWN_COLOR, cmds, STOP_COLOR);
-
+#endif
 		uart_write_bytes(unum, cmds, dl);//send at_command
 		tms = get_tmr(at_cmd[allcmd].wait);
 		rd_done = 0; len = 0; memset(data, 0, BSIZE);
@@ -161,7 +181,9 @@ char *uks=NULL, *uke=NULL;
 			    if (strstr(data, "ERROR:")) {
 				ets_printf("%s%s%s", RED_COLOR, data, STOP_COLOR);
 			    } else {
+#ifdef PRINT_AT
 				ets_printf("%s", data);
+#endif
 				if (data[0] == '+') put_at_value(allcmd, data);
 			    }
 			    rd_done = 1;
@@ -173,10 +195,11 @@ char *uks=NULL, *uke=NULL;
 	    }//while (allcmd < TotalCmd)
 
 	    if (!mode) {//at_command mode
-		if (lora_stat.plen) ets_printf("%s[%s] Freq=%s Mode=%s Power=%s Channel=%u BandW=%s SF=%u PackLen=%u%s\n",
+		if (lora_stat.plen) ets_printf("%s[%s] Freq=%s Mode=%s Hopping=%u Power=%s Channel=%u BandW=%s SF=%u PackLen=%u%s\n",
 						GREEN_COLOR, TAG_UART,
 						lora_freq[lora_stat.freq],
 						lora_main_mode[lora_stat.mode],
+						lora_stat.hfss,
 						lora_power[lora_stat.power],
 						lora_stat.chan,
 						lora_bandw[lora_stat.bandw - 6],
