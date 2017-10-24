@@ -5,10 +5,7 @@ const char *TAG_UART = "UART";
 const int unum = UART_NUMBER;
 const int uspeed = UART_SPEED;
 const int BSIZE = 128;
-const uint32_t wait_ack = 2000;
-#ifndef WITH_FULL_SLEEP
-    const uint32_t sleep_time = 120000;
-#endif
+uint32_t wait_ack;//2000
 s_pctrl pctrl = {0, 0, 1, 1, 0};
 bool lora_start = false, ts_set = false;
 static uint8_t allcmd=0;
@@ -104,6 +101,13 @@ void serial_task(void *arg)
 lora_start = true;
 char stx[256]={0};
 char *uks=NULL, *uke=NULL;
+#ifdef WITH_FULL_SLEEP
+    wait_ack = 5000;
+#else
+    wait_ack = 120000;
+#endif
+
+
 
 
     sprintf(stx, "Start serial_task | FreeMem %u\n", xPortGetFreeHeapSize()); printik(TAG_UART, stx, CYAN_COLOR);
@@ -135,11 +139,16 @@ char *uks=NULL, *uke=NULL;
 		memset(cmds, 0, BSIZE);
 		sprintf(cmds, "%s", at_cmd[allcmd].cmd);
 
-//		if (!strcmp(cmds, "AT+LRSF=")) {
-//		    sprintf(cmds+strlen(cmds),"C");//7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
-//		    lora_stat.sf = 12;
-//		}
-//		else
+		if (!strcmp(cmds, "AT+LRSF=")) {
+		    sprintf(cmds+strlen(cmds),"C");//7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
+		    lora_stat.sf = 12;
+		}
+		else
+		if (!strcmp(cmds, "AT+LRPL=")) {
+		    sprintf(cmds+strlen(cmds),"80");//1..127
+		    lora_stat.plen = 80;
+		}
+		else
 		//if (!strcmp(cmds, "AT+LRSBW=")) sprintf(cmds+strlen(cmds),"7");//6-62.5, 7-125, 8-250, 9-500
 		//else
 		//if (!strcmp(cmds, "AT+NODE=")) sprintf(cmds+strlen(cmds),"0,0");//AT+NODE=n,m -> n: 0—disable, 1—enable; mode: 0—only match NID, 1-match NID and BID
@@ -198,11 +207,11 @@ char *uks=NULL, *uke=NULL;
 	    }//while (allcmd < TotalCmd)
 
 	    if (!mode) {//at_command mode
-		if (lora_stat.plen) ets_printf("%s[%s] Freq=%s Mode=%s Hopping=%u Power=%s Channel=%u BandW=%s SF=%u PackLen=%u%s\n",
+		if (lora_stat.plen) ets_printf("%s[%s] Freq=%s Mode=%s Hopping=%s Power=%s Channel=%u BandW=%s SF=%u PackLen=%u%s\n",
 						GREEN_COLOR, TAG_UART,
 						lora_freq[lora_stat.freq],
 						lora_main_mode[lora_stat.mode],
-						lora_stat.hfss,
+						lora_hopping[lora_stat.hfss],
 						lora_power[lora_stat.power],
 						lora_stat.chan,
 						lora_bandw[lora_stat.bandw - 6],
@@ -272,8 +281,6 @@ char *uks=NULL, *uke=NULL;
 		    }
 #ifdef WITH_FULL_SLEEP
 		    if (needs) tmneeds = get_tmr(0);
-#else
-		    if (needs) tmneeds = get_tmr(sleep_time);
 #endif
 		}
 	    }
@@ -283,7 +290,7 @@ char *uks=NULL, *uke=NULL;
 #ifdef WITH_FULL_SLEEP
 		    if (lora_sleep_mode(true)) {
 			break;
-//			memset(stx,0,256); sprintf(stx,"Goto lora_sleep mode until %u sec\n", sleep_time/1000); printik(TAG_UART, stx, MAGENTA_COLOR);
+//			memset(stx,0,256); sprintf(stx,"Goto lora_sleep mode until %u sec\n", wait_ack/1000); printik(TAG_UART, stx, MAGENTA_COLOR);
 		    }
 #endif
 		    needs = false;

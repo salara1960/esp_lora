@@ -50,7 +50,7 @@
 
 
 
-#define WITH_FULL_SLEEP
+#undef WITH_FULL_SLEEP
 
 
 

@@ -36,6 +36,7 @@ const char *lora_crcode[] = {"CR4/5","CR4/6","CR4/7","CR4/8"};//0..3
 const char *lora_bandw[] = {"62.5KHZ","125KHZ","250KHZ","500KHZ"};//0..3
 const char *lora_main_mode[] = {"LoRa","OOK","FSK","GFSK"};//0..3
 const char *lora_freq[] = {"434MHZ","470MHZ","868MHZ","915MHZ"};//0..3
+const char *lora_hopping[] = {"disable","enable"};//0,1
 
 s_at_cmd at_cmd[] = {
     {//0

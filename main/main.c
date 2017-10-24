@@ -31,9 +31,13 @@ void app_main()
     //****************    SET WAKEUP PARAM    **************************
 #ifdef WITH_FULL_SLEEP
     gpio_num_t w_pin = WAKEUP_PIN;
+
     int w_level = WAKEUP_PIN_LEVEL;
+
     esp_sleep_enable_ext0_wakeup(w_pin, w_level);
+
     uint64_t time_in_us = WAKEUP_TIME * 1000000;
+
     esp_sleep_enable_timer_wakeup(time_in_us);
 #endif
     //**************************************************************
@@ -69,10 +73,9 @@ void app_main()
     TickType_t adc_tw = 0;
 #ifdef WITH_FULL_SLEEP
     const uint8_t sub_val = 10;
-    TickType_t wst = 0;
+    TickType_t wst = 0, sub_tmr = 125;
     uint32_t kol = 0;
     uint8_t blk = 0;
-    TickType_t sub_tmr = 125;
 #endif
 
     vTaskDelay(1000 / portTICK_RATE_MS);
@@ -84,76 +87,76 @@ void app_main()
     while (true) {
 
 	if (don) {
-	    if (check_tmr(adc_tw)) {
-		adc_tw = get_tmr(1000);
-		dit_ct = time(NULL);
-		dtimka=localtime(&dit_ct);
-		memset(stk,0,128);
-		col = calcx(sprintf(stk,"%02d:%02d:%02d", dtimka->tm_hour, dtimka->tm_min, dtimka->tm_sec));
-		get_tsensor(&tc);
-		sprintf(stk+strlen(stk),"\nChip : %.1fv %d%cC", (double)tc.vcc/1000, (int)round(tc.cels), 0x1F);
-		ssd1306_text_xy(stk, col, 1);
-	    }
+		if (check_tmr(adc_tw)) {
+			adc_tw = get_tmr(1000);
+			dit_ct = time(NULL);
+			dtimka = localtime(&dit_ct);
+			memset(stk,0,128);
+			col = calcx(sprintf(stk,"%02d:%02d:%02d", dtimka->tm_hour, dtimka->tm_min, dtimka->tm_sec));
+			get_tsensor(&tc);
+			sprintf(stk+strlen(stk),"\nChip : %.1fv %d%cC", (double)tc.vcc/1000, (int)round(tc.cels), 0x1F);
+			ssd1306_text_xy(stk, col, 1);
+		}
 	}
 
 	if (xQueueReceive(evtq, &evt, 10/portTICK_RATE_MS) == pdTRUE) {
-	    ssd1306_on(true); //display on
-	    don = true;
-	    ssd1306_contrast(cnt);
-	    memset(stk,0,128);
-	    if (!evt.type) {
-		sprintf(stk,"Send");
-		row = 7;
-	    } else {
-		sprintf(stk,"Recv");
-		row = 8;
-	    }
-	    sprintf(stk+strlen(stk)," pack #%u", evt.num);
-	    col = calcx(strlen(stk));
-	    ssd1306_text_xy(stk, col, row);
+		ssd1306_on(true); //display on
+		don = true;
+		ssd1306_contrast(cnt);
+		memset(stk,0,128);
+		if (!evt.type) {
+			sprintf(stk,"Send");
+			row = 7;
+		} else {
+			sprintf(stk,"Recv");
+			row = 8;
+		}
+		sprintf(stk+strlen(stk)," pack #%u", evt.num);
+		col = calcx(strlen(stk));
+		ssd1306_text_xy(stk, col, row);
 
 #ifdef WITH_FULL_SLEEP
-	    if (!blk) {// for start contrast play
-		blk = 1; kol = 0;
-		wst = get_tmr(sub_tmr);
-		memset(stk,0,128);
-		col = calcx(sprintf(stk,"Goto sleep..."));
-		ssd1306_text_xy(stk, col, 5);
-	    }
+		if (!blk) {// for start contrast play
+			blk = 1; kol = 0;
+			wst = get_tmr(sub_tmr);
+			memset(stk,0,128);
+			col = calcx(sprintf(stk,"Goto sleep..."));
+			ssd1306_text_xy(stk, col, 5);
+		}
 #endif
 	}
 
 
 #ifdef WITH_FULL_SLEEP
 	if (blk) {//contrast play
-	    if (check_tmr(wst)) {
-		kol++;
-		if (cnt >= sub_val) cnt -= sub_val; else cnt = 0;
-		ssd1306_contrast(cnt);
-		//memset(stz,0,128); sprintf(stz,"Contrast value=%u iter=%u\n\n", cnt, kol); printik(TAGM, stz, GREEN_COLOR);
-		if (!cnt) {
-		    cnt = 0xff; blk = ~cnt; // stop contrast play
-		    ssd1306_on(false); //display off
-		    don = false;
+		if (check_tmr(wst)) {
+			kol++;
+			if (cnt >= sub_val) cnt -= sub_val; else cnt = 0;
+			ssd1306_contrast(cnt);
+			//memset(stz,0,128); sprintf(stz,"Contrast value=%u iter=%u\n\n", cnt, kol); printik(TAGM, stz, GREEN_COLOR);
+			if (!cnt) {
+				cnt = 0xff; blk = ~cnt; // stop contrast play
+				ssd1306_on(false); //display off
+				don = false;
+			}
+			wst = get_tmr(sub_tmr);
 		}
-		wst = get_tmr(sub_tmr);
-	    }
 	}
 
 	if (!don) {
-	    while (lora_start) vTaskDelay(10 / portTICK_RATE_MS);
-	    memset(stk,0,128); sprintf(stk,"Goto light-sleep mode (%u sec)\n\n", WAKEUP_TIME); printik(TAGM, stk, WHITE_COLOR);
-	    esp_light_sleep_start();//goto sleep mode
+		while (lora_start) vTaskDelay(10 / portTICK_RATE_MS);
+		memset(stk,0,128); sprintf(stk,"Goto light-sleep mode (%u sec)\n\n", WAKEUP_TIME); printik(TAGM, stk, WHITE_COLOR);
+		esp_light_sleep_start();//goto sleep mode
 
-	    // !!!----------- Wakeup ------------!!!
-	    don = true;
-	    ssd1306_on(true);
-	    ssd1306_contrast(cnt);
-	    if (!lora_start) {
-		if (xTaskCreate(&serial_task, "serial_task", 4096, NULL, 7, NULL) != pdPASS) {
-		    ESP_LOGE(TAGM, "Create serial_task failed | FreeMem %u", xPortGetFreeHeapSize());
+		// !!!----------- Wakeup ------------!!!
+		don = true;
+		ssd1306_on(true);
+		ssd1306_contrast(cnt);
+		if (!lora_start) {
+			if (xTaskCreate(&serial_task, "serial_task", 4096, NULL, 7, NULL) != pdPASS) {
+				ESP_LOGE(TAGM, "Create serial_task failed | FreeMem %u", xPortGetFreeHeapSize());
+			}
 		}
-	    }
 	}
 #endif
 
