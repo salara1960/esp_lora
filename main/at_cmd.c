@@ -135,22 +135,22 @@ void put_at_value(uint8_t ind, char *uack)
 {
     if ( (ind > TotalCmd) || (!uack) ) return;
 
-    char cd[max_at_len]={0};
-    memcpy(cd, &at_cmd[ind].cmd[2], strlen(at_cmd[ind].cmd)-2);
-    int dl = strlen(cd); if (!dl) return;
+    char cd[max_at_len] = {0};
+    memcpy(cd, &at_cmd[ind].cmd[2], strlen(at_cmd[ind].cmd) - 2);
+    int dl = strlen(cd); if (dl <= 0) return;
 
     uint8_t bt;
     bool fl;
     int val;
-    char *uk=NULL;
+    char *uk = NULL;
     uk = strchr(cd, '='); if (uk) *uk = ':';
 
     switch (ind) {
 	case 3://AT+POWER
 	    uk = strstr(uack, cd);
 	    if (uk) {
-		val = atoi(uk+dl);
-		if ((val>=0) && (val<=7)) lora_stat.power = val;
+		val = atoi(uk + dl);
+		if ( (val >= 0) && (val <= 7) ) lora_stat.power = val;
 #ifdef PRN_DUMP
 		printf("cmd=%u '%s' power=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.power, lora_power[lora_stat.power]);
 #endif
@@ -162,9 +162,9 @@ void put_at_value(uint8_t ind, char *uack)
 		uk += dl;
 		fl = false;
 		bt = *uk;
-		if ( (bt>=0x30) && (bt<=0x39) ) {
+		if ( (bt >= 0x30) && (bt <= 0x39) ) {
 		    bt -= 0x30; fl = true;
-		} else if ( (bt>=0x41) && (bt<=0x46) ) {
+		} else if ( (bt >= 0x41) && (bt <= 0x46) ) {
 		    bt -= 0x37; fl = true;
 		}
 		if (fl) {
@@ -196,7 +196,7 @@ void put_at_value(uint8_t ind, char *uack)
 	    if (uk) {
 		uk += dl;
 		bt = *uk;
-		if ( (bt>=0x30) && (bt<=0x38) ) {
+		if ( (bt >= 0x30) && (bt <= 0x38) ) {
 		    lora_stat.syncl = bt - 0x30;
 #ifdef PRN_DUMP
 		    printf("cmd=%u '%s' syncl=%u\n", ind, at_cmd[ind].cmd, lora_stat.syncl);
@@ -209,7 +209,7 @@ void put_at_value(uint8_t ind, char *uack)
 	    if (uk) {
 		uk += dl;
 		bt = *uk;
-		if ( (bt>=0x30) && (bt<=0x31) ) {
+		if ( (bt >= 0x30) && (bt <= 0x31) ) {
 		    lora_stat.crc = bt - 0x30;
 #ifdef PRN_DUMP
 		    printf("cmd=%u '%s' crc=%u\n", ind, at_cmd[ind].cmd, lora_stat.crc);
@@ -222,7 +222,7 @@ void put_at_value(uint8_t ind, char *uack)
 	    if (uk) {
 		uk += dl;
 		bt = *uk;
-		if ( (bt>=0x36) && (bt<=0x39) ) {
+		if ( (bt >= 0x36) && (bt <= 0x39) ) {
 		    lora_stat.bandw = bt - 0x30;
 #ifdef PRN_DUMP
 		    printf("cmd=%u '%s' bandw=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.bandw, lora_bandw[lora_stat.bandw - 6]);
@@ -236,9 +236,9 @@ void put_at_value(uint8_t ind, char *uack)
 		uk += dl;
 		bt = *uk;
 		fl = false;
-		if ( (bt>=0x37) && (bt<=0x39) ) {
+		if ( (bt >= 0x37) && (bt <= 0x39) ) {
 		    bt -= 0x30; fl = true;
-		} else if ( (bt>=0x41) && (bt<=0x43) ) {
+		} else if ( (bt >= 0x41) && (bt <= 0x43) ) {
 		    bt -= 0x37; fl = true;
 		}
 		if (fl) {
@@ -254,7 +254,7 @@ void put_at_value(uint8_t ind, char *uack)
 	    if (uk) {
 		uk += dl;
 		bt = *uk;
-		if ( (bt>=0x30) && (bt<=0x33) ) {
+		if ( (bt >= 0x30) && (bt <= 0x33) ) {
 		    lora_stat.crcode = bt - 0x30;
 #ifdef PRN_DUMP
 		    printf("cmd=%u '%s' crcode=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.crcode, lora_crcode[lora_stat.crcode]);
@@ -267,7 +267,7 @@ void put_at_value(uint8_t ind, char *uack)
 	    if (uk) {
 		uk += dl;
 		bt = *uk;
-		if ( (bt>=0x30) && (bt<=0x31) ) {
+		if ( (bt >= 0x30) && (bt <= 0x31) ) {
 		    lora_stat.hfss = bt - 0x30;
 #ifdef PRN_DUMP
 		    printf("cmd=%u '%s' hfss=%u\n", ind, at_cmd[ind].cmd, lora_stat.hfss);
@@ -313,7 +313,7 @@ void put_at_value(uint8_t ind, char *uack)
 	    if (uk) {
 		uk += dl;
 		bt = *uk;
-		if ( (bt>=0x30) && (bt<=0x33) ) {
+		if ( (bt >= 0x30) && (bt <= 0x33) ) {
 		    lora_stat.mode = bt - 0x30;
 #ifdef PRN_DUMP
 		    printf("cmd=%u '%s' mode=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.mode, lora_main_mode[lora_stat.mode]);
@@ -326,7 +326,7 @@ void put_at_value(uint8_t ind, char *uack)
 	    if (uk) {
 		uk += dl;
 		bt = *uk;
-		if ( (bt>=0x30) && (bt<=0x33) ) {
+		if ( (bt >= 0x30) && (bt <= 0x33) ) {
 		    lora_stat.freq = bt - 0x30;
 #ifdef PRN_DUMP
 		    printf("cmd=%u '%s' freq=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.freq, lora_freq[lora_stat.freq]);

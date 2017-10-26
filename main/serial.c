@@ -8,9 +8,9 @@ const int BSIZE = 128;
 uint32_t wait_ack;//2000
 s_pctrl pctrl = {0, 0, 1, 1, 0};
 bool lora_start = false, ts_set = false;
-static uint8_t allcmd=0;
-static uint32_t pknum_tx=0;
-static uint32_t pknum_rx=0;
+static uint8_t allcmd = 0;
+static uint32_t pknum_tx = 0;
+static uint32_t pknum_rx = 0;
 static bool mode = false;//at_command
 
 //******************************************************************************************
@@ -99,8 +99,8 @@ bool lora_check_status()
 void serial_task(void *arg)
 {
 lora_start = true;
-char stx[256]={0};
-char *uks=NULL, *uke=NULL;
+char stx[256] = {0};
+char *uks = NULL, *uke = NULL;
 #ifdef WITH_FULL_SLEEP
     wait_ack = 5000;
 #else
@@ -121,11 +121,11 @@ char *uks=NULL, *uke=NULL;
 	lora_reset();
 	vTaskDelay(100 / portTICK_RATE_MS);
 
-	char cmds[BSIZE], tmp[32]={0};
-	uint32_t len=0, dl=0;
-	uint8_t buf=0, rd_done=0;
-	bool needs=false;
-	TickType_t tms=0, tmneeds=0;
+	char cmds[BSIZE], tmp[32] = {0};
+	uint32_t len = 0, dl = 0;
+	uint8_t buf = 0, rd_done = 0;
+	bool needs = false;
+	TickType_t tms = 0, tmneeds = 0;
 	t_sens_t tchip;
 	s_evt evt;
 	memset(&lora_stat, 0, sizeof(s_lora_stat));
@@ -260,7 +260,7 @@ char *uks=NULL, *uke=NULL;
 			    uks += 3;
 			    uke = strchr(uks,':');
 			    if (uke) {
-				memset(tmp,0,32);
+				memset(tmp, 0, 32);
 				memcpy(tmp, uks, (uint32_t)((uke-uks))&0x0F);//timestamp
 				SNTP_SET_SYSTEM_TIME_US( (time_t)atoi(tmp), 0 );
 				uks = uke + 1;
@@ -303,7 +303,7 @@ char *uks=NULL, *uke=NULL;
 
     }
 
-    memset(stx,0,256); sprintf(stx, "Stop serial_task | FreeMem %u\n", xPortGetFreeHeapSize()); printik(TAG_UART, stx, CYAN_COLOR);
+    memset(stx, 0, 256); sprintf(stx, "Stop serial_task | FreeMem %u\n", xPortGetFreeHeapSize()); printik(TAG_UART, stx, CYAN_COLOR);
 
     lora_start = false;
     vTaskDelete(NULL);

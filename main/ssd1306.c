@@ -231,7 +231,7 @@ void ssd1306_invert()
 void ssd1306_clear()
 {
 i2c_cmd_handle_t cmd;
-uint8_t i, zero[128]={0};
+uint8_t i, zero[128] = {0};
 
     for (i = 0; i < 8; i++) {
 	cmd = i2c_cmd_link_create();
@@ -347,7 +347,7 @@ uint8_t byte;
 void ssd1306_text_xy(char *stroka, uint8_t cx, uint8_t cy)
 {
 
-uint8_t i, lin = cy-1, col = cx-1, len = strlen(stroka);
+uint8_t i, lin = cy - 1, col = cx - 1, len = strlen(stroka);
 i2c_cmd_handle_t cmd;
 
     cmd = i2c_cmd_link_create();

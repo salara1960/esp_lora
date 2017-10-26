@@ -19,11 +19,11 @@
     #pragma pack(push,1)
     typedef struct
     {
-	unsigned config:1;
-	unsigned sleep:1;
-	unsigned status:1;
-	unsigned reset:1;
-	unsigned none:4;
+        unsigned config:1;
+        unsigned sleep:1;
+        unsigned status:1;
+        unsigned reset:1;
+        unsigned none:4;
     } s_pctrl;
     #pragma pack(pop)
 
