@@ -33,12 +33,15 @@ typedef struct {
     unsigned mode:2;   //0-LoRa, 1-OOK, 2-FSK, 3-GFSK
 
     unsigned freq:2;   //0-434MHZ Band, 1-470MHZ Band, 2-868MHZ Band, 3-915MHZ Band
-    unsigned none:6;
+    unsigned spr:4;    //0-1200bps 1-2400bps 2-4800bps 3-9600bps 4-14400bps 5-19200bps 6-38400bps 7-56000bps 8-57600bps 9-115200bps
+    unsigned spc:2;    //0..2  :  0-none 1-even 2-odd
 } s_lora_stat;
 #pragma pack(pop)
 
 s_lora_stat lora_stat;
 
+const char *lora_uspeed[] = {"1200","2400","4800","9600","14400","19200","38400","56000","57600","115200"};//0..9
+const char *lora_ucheck[] = {"none","even","odd"};//0,1,2
 const char *lora_power[] = {"20dbm","17dbm","15dbm","10dbm","??dbm","8dbm","5dbm","2dbm"};//0..7
 const char *lora_crcode[] = {"CR4/5","CR4/6","CR4/7","CR4/8"};//0..3
 const char *lora_bandw[] = {"62.5KHZ","125KHZ","250KHZ","500KHZ"};//0..3
@@ -51,15 +54,15 @@ s_at_cmd at_cmd[] = {
         .cmd = "AT",
         .wait = 5000,
     },
-    {//1//set speed //0--1200bps 5--19200bps 1--2400bps 6--38400bps 2--4800bps 7--56000bps 3--9600bps 8--57600bps 4--14400bps 9--115200bps
+    {//1//set speed //0-1200bps 1-2400bps 2-4800bps 3-9600bps 4-14400bps 5-19200bps 6-38400bps 7-56000bps 8-57600bps 9-115200bps
         .cmd = "AT+SPR=",
         .wait = wait_ack_def,
     },
-    {//2//set Serial Port Check // 0--none 1--even 2--old
+    {//2//set Serial Port Check // 0-none 1-even 2-odd
         .cmd = "AT+SPC=",
         .wait = wait_ack_def,
     },
-    {//3//set POWER to 20dbm //0—20dbm,  1—17dbm, 2—15dbm, 3—10dbm, 5—8dbm, 6—5dbm, 7—2dbm
+    {//3//set POWER to 20dbm //0—20dbm, 1—17dbm, 2—15dbm, 3—10dbm, 5—8dbm, 6—5dbm, 7—2dbm
         .cmd = "AT+POWER=",
         .wait = wait_ack_def,
     },
@@ -154,6 +157,34 @@ void put_at_value(uint8_t ind, char *uack)
     uk = strchr(cd, '='); if (uk) *uk = ':';
 
     switch (ind) {
+	case 1://AT+SPR
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		bt = *uk;
+		if ( (bt >= 0x30) && (bt <= 0x39) ) {
+		    bt -= 0x30;
+		    lora_stat.spr = bt;
+#ifdef PRN_DUMP
+		    printf("cmd=%u '%s' uspeed=%u(%sbps)\n", ind, at_cmd[ind].cmd, lora_stat.spr, lora_uspeed[lora_stat.spr]);
+#endif
+		}
+	    }
+	break;
+	case 2://AT+SPC
+	    uk = strstr(uack, cd);
+	    if (uk) {
+		uk += dl;
+		bt = *uk;
+		if ( (bt >= 0x30) && (bt <= 0x32) ) {
+		    bt -= 0x30;
+		    lora_stat.spc = bt;
+#ifdef PRN_DUMP
+		    printf("cmd=%u '%s' ucheck=%u(%s)\n", ind, at_cmd[ind].cmd, lora_stat.spc, lora_ucheck[lora_stat.spc]);
+#endif
+		}
+	    }
+	break;
 	case 3://AT+POWER
 	    uk = strstr(uack, cd);
 	    if (uk) {
