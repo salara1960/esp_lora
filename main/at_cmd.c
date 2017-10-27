@@ -1,5 +1,5 @@
 
-#include "function.h"
+#include "at_cmd.h"
 
 #undef PRN_DUMP
 
@@ -12,22 +12,30 @@ typedef struct {
     TickType_t wait;
 } s_at_cmd;
 
+#pragma pack(push,1)
 typedef struct {
-    uint8_t power;//0—20dbm,  1—17dbm, 2—15dbm, 3—10dbm, 4-?, 5—8dbm, 6—5dbm, 7—2dbm
-    uint8_t chan;//0..F — 0..15 channel
-    char syncw[16];// 0xXX........
-    uint8_t syncl;// 0..8
-    uint8_t crc;// 0..1
-    uint8_t bandw;// 6—62.5KHZ, 7—125KHZ, 8—250KHZ, 9—500KHZ
-    uint8_t sf;// 7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
-    uint8_t crcode;// 0—CR4/5, 1—CR4/6, 2—CR4/7, 3—CR4/8
-    uint8_t hfss;// 0..1
-    uint8_t plen;// 1..127
-    uint8_t hpv;// 0..255
-    uint16_t fsv;// 0..65535
-    uint8_t mode;// 0-LoRa, 1-OOK, 2-FSK, 3-GFSK
-    uint8_t freq;// 0--434MHZ Band, 1--470MHZ Band, 2--868MHZ Band, 3--915MHZ Band
+    unsigned char hpv; //0..255
+    unsigned short fsv;//0..65535
+    char syncw[16];    //0xXX........
+
+    unsigned syncl:4;  //0..8
+    unsigned power:3;  //0..7 //0—20dbm,  1—17dbm, 2—15dbm, 3—10dbm, 4-?, 5—8dbm, 6—5dbm, 7—2dbm
+    unsigned crc:1;    //0..1
+
+    unsigned chan:4;   //0..F — 0..15 channel
+    unsigned bandw:4;  //6—62.5KHZ, 7—125KHZ, 8—250KHZ, 9—500KHZ
+
+    unsigned hfss:1;   //0..1
+    unsigned plen:7;   //1..127
+
+    unsigned sf:4;     //7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
+    unsigned crcode:2; //0—CR4/5, 1—CR4/6, 2—CR4/7, 3—CR4/8
+    unsigned mode:2;   //0-LoRa, 1-OOK, 2-FSK, 3-GFSK
+
+    unsigned freq:2;   //0-434MHZ Band, 1-470MHZ Band, 2-868MHZ Band, 3-915MHZ Band
+    unsigned none:6;
 } s_lora_stat;
+#pragma pack(pop)
 
 s_lora_stat lora_stat;
 

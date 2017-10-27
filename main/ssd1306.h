@@ -6,11 +6,11 @@
 #define SDA_PIN GPIO_NUM_27	//13//15
 #define SCL_PIN GPIO_NUM_14	//14//2
 #define SSD1306_PORT I2C_NUM_1
-#ifdef WITH_FULL_SLEEP
+//#ifdef WITH_FULL_SLEEP
     #define I2C_CLOCK_HZ 400000	//400KHz	//1600000 - 1.6MHz  -> WORK !!!
-#else
-    #define I2C_CLOCK_HZ 800000	//800KHz	//1600000 - 1.6MHz  -> WORK !!!
-#endif
+//#else
+//    #define I2C_CLOCK_HZ 1600000	//1600KHz  -> WORK !!!
+//#endif
 
 // SLA (0x3C) + WRITE_MODE (0x00) =  0x78 (0b01111000)
 #define OLED_I2C_ADDRESS   0x3C

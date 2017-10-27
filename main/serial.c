@@ -139,17 +139,25 @@ char *uks = NULL, *uke = NULL;
 		memset(cmds, 0, BSIZE);
 		sprintf(cmds, "%s", at_cmd[allcmd].cmd);
 
-		if (!strcmp(cmds, "AT+LRSF=")) {
-		    sprintf(cmds+strlen(cmds),"C");//7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
-		    lora_stat.sf = 12;
+		if (!strcmp(cmds, "AT+LRSF=")) {//Spreading Factor
+		    lora_stat.sf = 11;//12
+		    sprintf(cmds+strlen(cmds),"%X", lora_stat.sf);//7—SF=7, 8—SF=8, 9—SF=9, A—SF=10, B—SF=11, C—SF=12
 		}
 		else
-		if (!strcmp(cmds, "AT+LRPL=")) {
-		    sprintf(cmds+strlen(cmds),"80");//1..127
+		if (!strcmp(cmds, "AT+LRPL=")) {// PackLen
 		    lora_stat.plen = 80;
+		    sprintf(cmds+strlen(cmds), "%d", lora_stat.plen);//1..127
 		}
 		else
-		//if (!strcmp(cmds, "AT+LRSBW=")) sprintf(cmds+strlen(cmds),"7");//6-62.5, 7-125, 8-250, 9-500
+		if (!strcmp(cmds, "AT+CS=")) {// Channel
+		    lora_stat.chan = 10;
+		    sprintf(cmds+strlen(cmds), "%X", lora_stat.chan);//B//set Channel Select to 10 //0..F — 0..15 channel
+		}
+		else
+		//if (!strcmp(cmds, "AT+LRSBW=")) {
+		//    lora_stat.bandw = 7;
+		//    sprintf(cmds+strlen(cmds), "%u", lora_stat.bandw);//6-62.5, 7-125, 8-250, 9-500
+		//}
 		//else
 		//if (!strcmp(cmds, "AT+NODE=")) sprintf(cmds+strlen(cmds),"0,0");//AT+NODE=n,m -> n: 0—disable, 1—enable; mode: 0—only match NID, 1-match NID and BID
 		//else
@@ -158,23 +166,25 @@ char *uks = NULL, *uke = NULL;
 		//else
 		//if (!strcmp(cmds, "AT+SYNL=")) sprintf(cmds+strlen(cmds),"4");//set sync word len // 0..8
 		//else
-		//if (!strcmp(cmds, "AT+POWER=")) sprintf(cmds+strlen(cmds),"2");//set POWER to 20dbm //0—20dbm//1—17dbm//2—15dbm//3—10dbm//4-???//5—8dbm//6—5dbm//7—2dbm
-		//else
 		//if (!strcmp(cmds, "AT+POWER=")) {
-		//    sprintf(cmds+strlen(cmds),"0");//2//set POWER to //0—20dbm 5—8dbm, 1—17dbm 6—5dbm, 2—15dbm 7—2dbm, 3—10dbm
-		//    lora_stat.power = 0;
-		//} else
+		//    lora_stat.power = 2;
+		//    sprintf(cmds+strlen(cmds), "%u", lora_stat.power);//set POWER to 20dbm //0—20dbm//1—17dbm//2—15dbm//3—10dbm//4-???//5—8dbm//6—5dbm//7—2dbm
+		//}
+		//else
 //		if (!strcmp(cmds, "AT+LRHF=")) {
-//		    sprintf(cmds+strlen(cmds),"1");//0,1
 //		    lora_stat.hfss = 1;
-//		} else if (!strcmp(cmds, "AT+LRHPV=")) sprintf(cmds+strlen(cmds),"10");//0..255
-//		else if (!strcmp(cmds, "AT+LRFSV=")) sprintf(cmds+strlen(cmds),"819");//0..65535  //819 - 50KHz (1638 - 100KHz)
-//		else 
-//		if (!strcmp(cmds, "AT+CS=")) {
-//		    sprintf(cmds+strlen(cmds),"A");//B//set Channel Select to 10 //0..F — 0..15 channel
-//		    lora_stat.chan = 10;
+//		    sprintf(cmds+strlen(cmds), "%u", lora_stat.hfss);//0,1
+//		} else 
+//		if (!strcmp(cmds, "AT+LRHPV=")) {
+//		    lora_stat.hpv = 10;
+//		    sprintf(cmds+strlen(cmds), "%u", lora_stat.hpv);//0..255
 //		}
-//		else
+//		else 
+//		if (!strcmp(cmds, "AT+LRFSV=")) {
+//		    lora_stat.fsv = 819;
+//		    sprintf(cmds+strlen(cmds),"%u", lora_stat.fsv);//0..65535  //819 - 50KHz (1638 - 100KHz)
+//		}
+//		else 
 		if (strchr(cmds,'=')) sprintf(cmds+strlen(cmds),"?");
 
 
