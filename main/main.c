@@ -92,7 +92,7 @@ void app_main()
 			dit_ct = time(NULL);
 			dtimka = localtime(&dit_ct);
 			memset(stk, 0, 128);
-			col = calcx(sprintf(stk,"%02d:%02d:%02d", dtimka->tm_hour, dtimka->tm_min, dtimka->tm_sec));
+			col = ssd1306_calcx(sprintf(stk,"%02d:%02d:%02d", dtimka->tm_hour, dtimka->tm_min, dtimka->tm_sec));
 			get_tsensor(&tc);
 			sprintf(stk+strlen(stk),"\nChip : %.1fv %d%cC", (double)tc.vcc/1000, (int)round(tc.cels), 0x1F);
 			ssd1306_text_xy(stk, col, 1);
@@ -112,7 +112,7 @@ void app_main()
 			row = 8;
 		}
 		sprintf(stk+strlen(stk)," pack #%u", evt.num);
-		col = calcx(strlen(stk));
+		col = ssd1306_calcx(strlen(stk));
 		ssd1306_text_xy(stk, col, row);
 
 #ifdef WITH_FULL_SLEEP
@@ -120,7 +120,7 @@ void app_main()
 			blk = 1; kol = 0;
 			wst = get_tmr(sub_tmr);
 			memset(stk, 0, 128);
-			col = calcx(sprintf(stk,"Goto sleep..."));
+			col = ssd1306_calcx(sprintf(stk,"Goto sleep..."));
 			ssd1306_text_xy(stk, col, 5);
 		}
 #endif

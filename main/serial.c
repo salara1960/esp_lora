@@ -154,37 +154,39 @@ char *uks = NULL, *uke = NULL;
 		    sprintf(cmds+strlen(cmds), "%X", lora_stat.chan);//B//set Channel Select to 10 //0..F — 0..15 channel
 		}
 		else
-		//if (!strcmp(cmds, "AT+LRSBW=")) {
-		//    lora_stat.bandw = 7;
-		//    sprintf(cmds+strlen(cmds), "%u", lora_stat.bandw);//6-62.5, 7-125, 8-250, 9-500
-		//}
-		//else
-		//if (!strcmp(cmds, "AT+NODE=")) sprintf(cmds+strlen(cmds),"0,0");//AT+NODE=n,m -> n: 0—disable, 1—enable; mode: 0—only match NID, 1-match NID and BID
-		//else
-		//if (!strcmp(cmds, "AT+NID=")) sprintf(cmds+strlen(cmds),"0");//0xBC//In FSK mode. The node ID can be set 0..255
-		//if (!strcmp(cmds, "AT+SYNW=")) sprintf(cmds+strlen(cmds),"C405EF90");//AT+SYNW=1234ABEF\r\n (if sync word is 0x12,0x34,0xAB,0xEF)
-		//else
-		//if (!strcmp(cmds, "AT+SYNL=")) sprintf(cmds+strlen(cmds),"4");//set sync word len // 0..8
-		//else
-		//if (!strcmp(cmds, "AT+POWER=")) {
-		//    lora_stat.power = 2;
-		//    sprintf(cmds+strlen(cmds), "%u", lora_stat.power);//set POWER to 20dbm //0—20dbm//1—17dbm//2—15dbm//3—10dbm//4-???//5—8dbm//6—5dbm//7—2dbm
-		//}
-		//else
-//		if (!strcmp(cmds, "AT+LRHF=")) {
-//		    lora_stat.hfss = 1;
-//		    sprintf(cmds+strlen(cmds), "%u", lora_stat.hfss);//0,1
-//		} else 
-//		if (!strcmp(cmds, "AT+LRHPV=")) {
-//		    lora_stat.hpv = 10;
-//		    sprintf(cmds+strlen(cmds), "%u", lora_stat.hpv);//0..255
-//		}
-//		else 
-//		if (!strcmp(cmds, "AT+LRFSV=")) {
-//		    lora_stat.fsv = 819;
-//		    sprintf(cmds+strlen(cmds),"%u", lora_stat.fsv);//0..65535  //819 - 50KHz (1638 - 100KHz)
-//		}
-//		else 
+/*
+		if (!strcmp(cmds, "AT+LRSBW=")) {
+		    lora_stat.bandw = 7;
+		    sprintf(cmds+strlen(cmds), "%u", lora_stat.bandw);//6-62.5, 7-125, 8-250, 9-500
+		}
+		else
+		if (!strcmp(cmds, "AT+NODE=")) sprintf(cmds+strlen(cmds),"0,0");//AT+NODE=n,m -> n: 0—disable, 1—enable; mode: 0—only match NID, 1-match NID and BID
+		else
+		if (!strcmp(cmds, "AT+NID=")) sprintf(cmds+strlen(cmds),"0");//0xBC//In FSK mode. The node ID can be set 0..255
+		if (!strcmp(cmds, "AT+SYNW=")) sprintf(cmds+strlen(cmds),"C405EF90");//AT+SYNW=1234ABEF\r\n (if sync word is 0x12,0x34,0xAB,0xEF)
+		else
+		if (!strcmp(cmds, "AT+SYNL=")) sprintf(cmds+strlen(cmds),"4");//set sync word len // 0..8
+		else
+		if (!strcmp(cmds, "AT+POWER=")) {
+		    lora_stat.power = 2;
+		    sprintf(cmds+strlen(cmds), "%u", lora_stat.power);//set POWER to 20dbm //0—20dbm//1—17dbm//2—15dbm//3—10dbm//4-???//5—8dbm//6—5dbm//7—2dbm
+		}
+		else
+		if (!strcmp(cmds, "AT+LRHF=")) {
+		    lora_stat.hfss = 1;
+		    sprintf(cmds+strlen(cmds), "%u", lora_stat.hfss);//0,1
+		} else 
+		if (!strcmp(cmds, "AT+LRHPV=")) {
+		    lora_stat.hpv = 10;
+		    sprintf(cmds+strlen(cmds), "%u", lora_stat.hpv);//0..255
+		}
+		else 
+		if (!strcmp(cmds, "AT+LRFSV=")) {
+		    lora_stat.fsv = 819;
+		    sprintf(cmds+strlen(cmds),"%u", lora_stat.fsv);//0..65535  //819 - 50KHz (1638 - 100KHz)
+		}
+		else 
+*/
 		if (strchr(cmds,'=')) sprintf(cmds+strlen(cmds),"?");
 
 
@@ -195,7 +197,9 @@ char *uks = NULL, *uke = NULL;
 #endif
 		uart_write_bytes(unum, cmds, dl);//send at_command
 		tms = get_tmr(at_cmd[allcmd].wait);
-		rd_done = 0; len = 0; memset(data, 0, BSIZE);
+		rd_done = 0;
+		len = 0;
+		memset(data, 0, BSIZE);
 		while ( !rd_done && !check_tmr(tms) ) {
 		    if (uart_read_bytes(unum, &buf, 1, (TickType_t)25) == 1) {
 			data[len++] = buf;
@@ -231,7 +235,8 @@ char *uks = NULL, *uke = NULL;
 		mode = true;
 		lora_data_mode(mode);//set data mode
 		vTaskDelay(15 / portTICK_RATE_MS);
-		len = 0; memset(data, 0, BSIZE);
+		len = 0;
+		memset(data, 0, BSIZE);
 		ets_printf("%s[%s] Device %X switch from at_command to data tx/rx mode and goto sleep%s\n", MAGENTA_COLOR, TAG_UART, cli_id, STOP_COLOR);
 		needs = false;
 	    } else {//data transfer mode
@@ -249,7 +254,8 @@ char *uks = NULL, *uke = NULL;
 
 		    uart_write_bytes(unum, cmds, dl);
 		    printik(TAG_UART, cmds, MAGENTA_COLOR);
-		    evt.type = 0; evt.num = pknum_tx;
+		    evt.type = 0;
+		    evt.num = pknum_tx;
 		    if (xQueueSend(evtq, (void *)&evt, (TickType_t)0) != pdPASS) {
 			ESP_LOGE(TAG_UART,"Error while sending to evtq");
 		    }
@@ -284,8 +290,10 @@ char *uks = NULL, *uke = NULL;
 			    }
 			}
 		    }
-		    len = 0; memset(data, 0, BSIZE);
-		    evt.type = 1; evt.num = pknum_rx;
+		    len = 0;
+		    memset(data, 0, BSIZE);
+		    evt.type = 1;
+		    evt.num = pknum_rx;
 		    if (xQueueSend(evtq, (void *)&evt, (TickType_t)0) != pdPASS) {
 		        ESP_LOGE(TAG_UART,"Error while sending to evtq");
 		    }
@@ -313,7 +321,9 @@ char *uks = NULL, *uke = NULL;
 
     }
 
-    memset(stx, 0, 256); sprintf(stx, "Stop serial_task | FreeMem %u\n", xPortGetFreeHeapSize()); printik(TAG_UART, stx, CYAN_COLOR);
+    memset(stx, 0, 256);
+    sprintf(stx, "Stop serial_task | FreeMem %u\n", xPortGetFreeHeapSize());
+    printik(TAG_UART, stx, CYAN_COLOR);
 
     lora_start = false;
     vTaskDelete(NULL);

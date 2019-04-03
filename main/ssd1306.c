@@ -344,7 +344,7 @@ uint8_t byte;
     i2c_cmd_link_delete(cmd);
 }
 //-----------------------------------------------------------------------------------------
-void ssd1306_text_xy(char *stroka, uint8_t cx, uint8_t cy)
+void ssd1306_text_xy(const char *stroka, uint8_t cx, uint8_t cy)
 {
 
 uint8_t i, lin = cy - 1, col = cx - 1, len = strlen(stroka);
@@ -389,12 +389,12 @@ i2c_cmd_handle_t cmd;
 
 }
 //-----------------------------------------------------------------------------------------
-void ssd1306_text(char *stroka)
+void ssd1306_text(const char *stroka)
 {
     ssd1306_text_xy(stroka, 1, 1);
 }
 //-----------------------------------------------------------------------------------------
-uint8_t calcx(int len)
+uint8_t ssd1306_calcx(int len)
 {
 uint8_t ret = 0;
 
